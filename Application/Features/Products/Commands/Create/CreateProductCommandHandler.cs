@@ -16,17 +16,6 @@ public sealed class CreateProductCommandHandler(IProductRepository productReposi
 
     await _productRepository.AddAsync(product, cancellationToken);
 
-    var response = new ProductResponse
-    {
-      Id = product.Id,
-      Name = product.Name,
-      Description = product.Description,
-      Price = product.Price,
-      StockQuantity = product.StockQuantity,
-      IsActive = product.IsActive,
-      CreatedAt = product.CreatedAt
-    };
-
-    return ServiceResponse<ProductResponse>.Ok(response, "Produto cadastrado com sucesso.");
+    return ServiceResponse<ProductResponse>.Ok(product.ToResponse(), "Produto cadastrado com sucesso.");
   }
 }
