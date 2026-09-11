@@ -3,32 +3,20 @@ using MediatR;
 
 namespace Application.Common.Behaviors;
 
-public sealed class ValidationBehavior<TRequest, TResponse>(
-    IEnumerable<IValidator<TRequest>> validators)
-    : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators = validators;
 
-    public async Task<TResponse> Handle(
-        TRequest request,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
         if (!_validators.Any())
             return await next();
 
         var context = new ValidationContext<TRequest>(request);
 
-        var validationResults = await Task.WhenAll(
-            _validators.Select(validator =>
-                validator.ValidateAsync(context, ct))
-        );
+        var validationResults = await Task.WhenAll(_validators.Select(validator => validator.ValidateAsync(context, ct)));
 
-        var failures = validationResults
-            .SelectMany(result => result.Errors)
-            .Where(failure => failure is not null)
-            .ToList();
+        var failures = validationResults.SelectMany(result => result.Errors).Where(failure => failure is not null).ToList();
 
         if (failures.Count != 0)
             throw new ValidationException(failures);

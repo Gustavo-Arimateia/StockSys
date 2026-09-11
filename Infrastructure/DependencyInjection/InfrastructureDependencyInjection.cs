@@ -1,5 +1,6 @@
-﻿using Domain.Interfaces.Infra;
+﻿using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +13,7 @@ public static class InfrastructureDependencyInjection
   {
     var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
 
-    services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer( connectionString, sqlServerOptions =>
+    services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer(connectionString, sqlServerOptions =>
     {
       sqlServerOptions.EnableRetryOnFailure(
           maxRetryCount: 5,
@@ -20,7 +21,7 @@ public static class InfrastructureDependencyInjection
           errorNumbersToAdd: null);
     }));
 
-    services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
+    services.AddScoped<IProductRepository, ProductRepository>();
 
     return services;
   }
