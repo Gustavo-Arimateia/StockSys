@@ -22,18 +22,11 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
         }
     }
 
-    private static async Task HandleValidationExceptionAsync(
-        HttpContext context,
-        ValidationException exception)
+    private static async Task HandleValidationExceptionAsync(HttpContext context, ValidationException exception)
     {
-        var errors = exception.Errors
-            .Select(x => x.ErrorMessage)
-            .Distinct()
-            .ToList();
+        var errors = exception.Errors.Select(x => x.ErrorMessage).Distinct().ToList();
 
-        string message = errors.Count == 1
-            ? errors[0]
-            : "Existem campos inválidos na requisição.";
+        string message = errors.Count == 1 ? errors[0] : "Existem campos inválidos na requisição.";
 
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
         context.Response.ContentType = "application/json";

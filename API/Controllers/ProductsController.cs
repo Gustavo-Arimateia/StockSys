@@ -1,4 +1,5 @@
 ﻿using Application.Features.Products.Commands.Create;
+using Application.Features.Products.Queries.GetAll;
 using Application.Features.Products.Queries.GetById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -43,5 +44,13 @@ public sealed class ProductsController(IMediator mediator): ControllerBase
     }
 
     return Ok(product);
+  }
+
+  [HttpGet]
+  public async Task<IActionResult> GetAll([FromQuery] GetProductsQuery query, CancellationToken cancellationToken)
+  {
+    var response = await _mediator.Send(query, cancellationToken);
+
+    return Ok(response);
   }
 }
