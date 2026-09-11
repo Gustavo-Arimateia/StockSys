@@ -2,6 +2,7 @@ using API.Middlewares;
 using Application.DependencyInjection;
 using Infrastructure.DependencyInjection;
 using Microsoft.OpenApi;
+using Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,11 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+  await DatabaseInitializer.MigrateAsync(app.Services);
+}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 

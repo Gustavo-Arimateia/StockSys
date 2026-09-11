@@ -12,7 +12,13 @@ public static class InfrastructureDependencyInjection
   {
     var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
 
-    services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer(connectionString));
+    services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer( connectionString, sqlServerOptions =>
+    {
+      sqlServerOptions.EnableRetryOnFailure(
+          maxRetryCount: 5,
+          maxRetryDelay: TimeSpan.FromSeconds(5),
+          errorNumbersToAdd: null);
+    }));
 
     services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
 

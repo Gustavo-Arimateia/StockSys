@@ -1,30 +1,33 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+
+WORKDIR /app
+
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
 WORKDIR /src
 
-COPY ["Base.API/Base.API.csproj", "Base.API/"]
-COPY ["Base.Application/Base.Application.csproj", "Base.Application/"]
-COPY ["Base.Domain/Base.Domain.csproj", "Base.Domain/"]
-COPY ["Base.Infrastructure/Base.Infrastructure.csproj", "Base.Infrastructure/"]
+COPY ["API/API.csproj", "API/"]
+COPY ["Application/Application.csproj", "Application/"]
+COPY ["Domain/Domain.csproj", "Domain/"]
+COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
 
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
-    dotnet restore "Base.API/Base.API.csproj"
+RUN dotnet restore "API/API.csproj"
 
 COPY . .
 
-WORKDIR "/src/Base.API"
+WORKDIR "/src/API"
 
-RUN dotnet publish "Base.API.csproj" \
+RUN dotnet publish "API.csproj" \
     -c Release \
     -o /app/publish \
-    --no-restore \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
-WORKDIR /app
+FROM base AS final
 
-ENV ASPNETCORE_URLS=http://0.0.0.0:10000
-EXPOSE 10000
+WORKDIR /app
 
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "Base.API.dll"]
+ENTRYPOINT ["dotnet", "API.dll"]
