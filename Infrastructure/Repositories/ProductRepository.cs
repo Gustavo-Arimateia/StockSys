@@ -72,7 +72,7 @@ public sealed class ProductRepository(StockSysDbContext dbContext) : IProductRep
         return await _dbContext.Products.FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
     }
 
-    public async Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(CancellationToken cancellationToken = default)
     {
         await _dbContext.SaveChangesAsync(cancellationToken);
     }

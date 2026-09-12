@@ -6,16 +6,5 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Remove="Common\**" />
-    <EmbeddedResource Remove="Enums\**" />
-    <EmbeddedResource Remove="Exceptions\**" />
-    <None Remove="Common\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="DTOs\" />
-  </ItemGroup>
-
 </Project>
 
