@@ -12,7 +12,7 @@ public sealed class CreateProductCommandHandler(IProductRepository productReposi
 
   public async Task<ServiceResponse<ProductResponse>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
   {
-    var product = new Product(request.Name.Trim(), request.Description.Trim(), request.Price, request.StockQuantity);
+    var product = new Product(request.Name, request.Description, request.Price, request.StockQuantity);
 
     await _productRepository.AddAsync(product, cancellationToken);
 
