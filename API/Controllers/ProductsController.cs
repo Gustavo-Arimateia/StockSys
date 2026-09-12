@@ -1,4 +1,5 @@
-﻿using Application.Features.Products.Commands.Create;
+﻿using Application.Features.Products.Commands.ChangeStatus;
+using Application.Features.Products.Commands.Create;
 using Application.Features.Products.Commands.Update;
 using Application.Features.Products.Queries.GetAll;
 using Application.Features.Products.Queries.GetById;
@@ -64,6 +65,40 @@ public sealed class ProductsController(IMediator mediator) : ControllerBase
         };
 
         var product = await _mediator.Send(command, cancellationToken);
+
+        if (product is null)
+        {
+            return NotFound(new
+            {
+                message = "Produto não encontrado.",
+                code = "PRODUCT_NOT_FOUND"
+            });
+        }
+
+        return Ok(product);
+    }
+
+    [HttpPatch("{id:int}/activate")]
+    public async Task<IActionResult> Activate(int id, CancellationToken cancellationToken)
+    {
+        var product = await _mediator.Send(new ChangeProductStatusCommand(id, true), cancellationToken);
+
+        if (product is null)
+        {
+            return NotFound(new
+            {
+                message = "Produto não encontrado.",
+                code = "PRODUCT_NOT_FOUND"
+            });
+        }
+
+        return Ok(product);
+    }
+
+    [HttpPatch("{id:int}/deactivate")]
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
+    {
+        var product = await _mediator.Send(new ChangeProductStatusCommand(id, false), cancellationToken);
 
         if (product is null)
         {

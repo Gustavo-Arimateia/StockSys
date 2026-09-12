@@ -37,4 +37,14 @@ public sealed class Product
         Price = price;
         StockQuantity = stockQuantity;
     }
+
+    public void Activate()
+    {
+        IsActive = true;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+    }
 }
