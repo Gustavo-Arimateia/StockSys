@@ -12,6 +12,8 @@ public sealed class Order
 
   public Order(IEnumerable<OrderItem> items, decimal discountPercentage)
   {
+    ArgumentNullException.ThrowIfNull(items);
+
     var orderItems = items.ToList();
 
     if (orderItems.Count == 0)
