@@ -47,4 +47,17 @@ public sealed class Product
     {
         IsActive = false;
     }
+
+    public bool TryDecreaseStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity));
+
+        if (StockQuantity < quantity)
+            return false;
+
+        StockQuantity -= quantity;
+
+        return true;
+    }
 }

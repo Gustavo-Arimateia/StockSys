@@ -1,4 +1,5 @@
-﻿using Domain.Interfaces.Repositories;
+﻿using Application.Interfaces.Repositories;
+using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -9,20 +10,15 @@ namespace Infrastructure.DependencyInjection;
 
 public static class InfrastructureDependencyInjection
 {
-  public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
-  {
-    var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
-
-    services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer(connectionString, sqlServerOptions =>
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-      sqlServerOptions.EnableRetryOnFailure(
-          maxRetryCount: 5,
-          maxRetryDelay: TimeSpan.FromSeconds(5),
-          errorNumbersToAdd: null);
-    }));
+        var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' não configurada.");
 
-    services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddDbContext<StockSysDbContext>(options => options.UseSqlServer(connectionString));
 
-    return services;
-  }
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+
+        return services;
+    }
 }

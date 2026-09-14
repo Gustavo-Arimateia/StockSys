@@ -64,4 +64,26 @@ public sealed class ProductTests
 
     Assert.True(product.IsActive);
   }
+
+    [Fact]
+    public void TryDecreaseStock_ShouldDecreaseStock_WhenQuantityIsAvailable()
+    {
+        var product = new Product("Mouse", "Mouse Gamer", 100m, 10);
+
+        var result = product.TryDecreaseStock(3);
+
+        Assert.True(result);
+        Assert.Equal(7, product.StockQuantity);
+    }
+
+    [Fact]
+    public void TryDecreaseStock_ShouldNotChangeStock_WhenQuantityIsUnavailable()
+    {
+        var product = new Product("Mouse", "Mouse Gamer", 100m, 2);
+
+        var result = product.TryDecreaseStock(3);
+
+        Assert.False(result);
+        Assert.Equal(2, product.StockQuantity);
+    }
 }

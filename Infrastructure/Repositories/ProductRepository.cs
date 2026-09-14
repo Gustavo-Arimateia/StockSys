@@ -8,72 +8,77 @@ namespace Infrastructure.Repositories;
 
 public sealed class ProductRepository(StockSysDbContext dbContext) : IProductRepository
 {
-  private readonly StockSysDbContext _dbContext = dbContext;
+    private readonly StockSysDbContext _dbContext = dbContext;
 
-  public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
-  {
-    await _dbContext.Products.AddAsync(product, cancellationToken);
-
-    await _dbContext.SaveChangesAsync(cancellationToken);
-  }
-
-  public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-  {
-    return await _dbContext.Products.AsNoTracking().FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
-  }
-
-  public async Task<PagedResult<Product>> GetPagedAsync(int page, int pageSize, string? name, bool? isActive, string sortBy, string sortDirection, CancellationToken cancellationToken = default)
-  {
-    var query = _dbContext.Products.AsNoTracking().AsQueryable();
-
-    if (!string.IsNullOrWhiteSpace(name))
+    public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
-      var normalizedName = name.Trim();
+        await _dbContext.Products.AddAsync(product, cancellationToken);
 
-      query = query.Where(product => product.Name.Contains(normalizedName));
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    if (isActive.HasValue)
-      query = query.Where(product => product.IsActive == isActive.Value);
-
-
-    query = ApplyOrdering(query, sortBy, sortDirection);
-
-    var totalItems = await query.CountAsync(cancellationToken);
-
-    var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
-
-    return new PagedResult<Product>
+    public async Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-      Items = items,
-      Page = page,
-      PageSize = pageSize,
-      TotalItems = totalItems,
-      TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize)
-    };
-  }
+        return await _dbContext.Products.AsNoTracking().FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
+    }
 
-  private static IQueryable<Product> ApplyOrdering(IQueryable<Product> query, string sortBy, string sortDirection)
-  {
-    var descending = sortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase);
-
-    return sortBy.ToLowerInvariant() switch
+    public async Task<PagedResult<Product>> GetPagedAsync(int page, int pageSize, string? name, bool? isActive, string sortBy, string sortDirection, CancellationToken cancellationToken = default)
     {
-      "id" => descending ? query.OrderByDescending(product => product.Id) : query.OrderBy(product => product.Id),
-      "price" => descending ? query.OrderByDescending(product => product.Price).ThenBy(product => product.Id) : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
-      "stockquantity" => descending ? query.OrderByDescending(product => product.StockQuantity).ThenBy(product => product.Id) : query.OrderBy(product => product.StockQuantity).ThenBy(product => product.Id),
-      "createdat" => descending ? query.OrderByDescending(product => product.CreatedAt).ThenBy(product => product.Id) : query.OrderBy(product => product.CreatedAt).ThenBy(product => product.Id),
-      _ => descending ? query.OrderByDescending(product => product.Name).ThenBy(product => product.Id) : query.OrderBy(product => product.Name).ThenBy(product => product.Id)
-    };
-  }
+        var query = _dbContext.Products.AsNoTracking().AsQueryable();
 
-  public async Task<Product?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default)
-  {
-    return await _dbContext.Products.FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
-  }
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var normalizedName = name.Trim();
 
-  public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
-  {
-    await _dbContext.SaveChangesAsync(cancellationToken);
-  }
+            query = query.Where(product => product.Name.Contains(normalizedName));
+        }
+
+        if (isActive.HasValue)
+            query = query.Where(product => product.IsActive == isActive.Value);
+
+
+        query = ApplyOrdering(query, sortBy, sortDirection);
+
+        var totalItems = await query.CountAsync(cancellationToken);
+
+        var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+
+        return new PagedResult<Product>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize)
+        };
+    }
+
+    private static IQueryable<Product> ApplyOrdering(IQueryable<Product> query, string sortBy, string sortDirection)
+    {
+        var descending = sortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+        return sortBy.ToLowerInvariant() switch
+        {
+            "id" => descending ? query.OrderByDescending(product => product.Id) : query.OrderBy(product => product.Id),
+            "price" => descending ? query.OrderByDescending(product => product.Price).ThenBy(product => product.Id) : query.OrderBy(product => product.Price).ThenBy(product => product.Id),
+            "stockquantity" => descending ? query.OrderByDescending(product => product.StockQuantity).ThenBy(product => product.Id) : query.OrderBy(product => product.StockQuantity).ThenBy(product => product.Id),
+            "createdat" => descending ? query.OrderByDescending(product => product.CreatedAt).ThenBy(product => product.Id) : query.OrderBy(product => product.CreatedAt).ThenBy(product => product.Id),
+            _ => descending ? query.OrderByDescending(product => product.Name).ThenBy(product => product.Id) : query.OrderBy(product => product.Name).ThenBy(product => product.Id)
+        };
+    }
+
+    public async Task<Product?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products.FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<Product>> GetByIdsForUpdateAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products.Where(product => ids.Contains(product.Id)).ToListAsync(cancellationToken);
+    }
 }

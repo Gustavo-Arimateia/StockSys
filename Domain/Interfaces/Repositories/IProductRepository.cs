@@ -15,4 +15,6 @@ public interface IProductRepository
     Task<Product?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<Product>> GetByIdsForUpdateAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default);
 }
