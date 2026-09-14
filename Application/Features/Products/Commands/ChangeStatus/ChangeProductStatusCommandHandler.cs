@@ -22,7 +22,7 @@ public sealed class ChangeProductStatusCommandHandler(IProductRepository product
     else
       product.Deactivate();
 
-    await _productRepository.UpdateAsync(cancellationToken);
+    await _productRepository.SaveChangesAsync(cancellationToken);
 
     return product.ToResponse();
   }

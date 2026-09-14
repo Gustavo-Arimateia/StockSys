@@ -1,0 +1,77 @@
+﻿using Domain.Enums;
+
+namespace Domain.Entities;
+
+public sealed class Order
+{
+  private const decimal MaximumDiscountPercentage = 20m;
+
+  private readonly List<OrderItem> _items = [];
+
+  private Order() {}
+
+  public Order(IEnumerable<OrderItem> items, decimal discountPercentage)
+  {
+    var orderItems = items.ToList();
+
+    if (orderItems.Count == 0)
+      throw new ArgumentException("O pedido deve possuir pelo menos um item.", nameof(items));
+
+    if (discountPercentage < 0 || discountPercentage > MaximumDiscountPercentage)
+      throw new ArgumentOutOfRangeException(nameof(discountPercentage), $"O desconto deve estar entre 0 e {MaximumDiscountPercentage}%."); 
+
+    _items.AddRange(orderItems);
+
+    Status = OrderStatus.Pending;
+    CreatedAt = DateTime.UtcNow;
+
+    DiscountPercentage = discountPercentage;
+
+    CalculateValues();
+  }
+
+  public int Id { get; private set; }
+
+  public DateTime CreatedAt { get; private set; }
+
+  public OrderStatus Status { get; private set; }
+
+  public decimal ProductsValue { get; private set; }
+
+  public decimal DiscountPercentage { get; private set; }
+
+  public decimal DiscountValue { get; private set; }
+
+  public decimal TotalValue { get; private set; }
+
+  public IReadOnlyCollection<OrderItem> Items => _items;
+
+  public bool CanTransitionTo(OrderStatus newStatus)
+  {
+    return Status switch
+    {
+      OrderStatus.Pending => newStatus is OrderStatus.Processing or OrderStatus.Cancelled,
+      OrderStatus.Processing => newStatus is OrderStatus.Completed or OrderStatus.Cancelled,
+      _ => false
+    };
+  }
+
+  public bool TransitionTo(OrderStatus newStatus)
+  {
+    if (!CanTransitionTo(newStatus))
+      return false;
+
+    Status = newStatus;
+
+    return true;
+  }
+
+  private void CalculateValues()
+  {
+    ProductsValue = _items.Sum(item => item.Total);
+
+    DiscountValue = decimal.Round(ProductsValue * DiscountPercentage / 100m, 2, MidpointRounding.AwayFromZero);
+
+    TotalValue = ProductsValue - DiscountValue;
+  }
+}

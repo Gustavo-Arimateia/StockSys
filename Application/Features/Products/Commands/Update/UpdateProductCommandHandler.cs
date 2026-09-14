@@ -19,7 +19,7 @@ public sealed class UpdateProductCommandHandler(IProductRepository productReposi
 
     product.Update(request.Name, request.Description, request.Price, request.StockQuantity);
 
-    await _productRepository.UpdateAsync(cancellationToken);
+    await _productRepository.SaveChangesAsync(cancellationToken);
 
     return product.ToResponse();
   }
