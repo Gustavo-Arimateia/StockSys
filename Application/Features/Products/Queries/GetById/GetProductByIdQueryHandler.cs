@@ -1,17 +1,22 @@
-﻿using Application.Features.Products.Common;
+﻿using Application.Common.Errors;
+using Application.Common.Exceptions;
+using Application.Features.Products.Common;
 using Domain.Interfaces.Repositories;
 using MediatR;
 
 namespace Application.Features.Products.Queries.GetById;
 
-public sealed class GetProductByIdQueryHandler(IProductRepository productRepository) : IRequestHandler<GetProductByIdQuery, ProductResponse?>
+public sealed class GetProductByIdQueryHandler(IProductRepository productRepository) : IRequestHandler<GetProductByIdQuery, ProductResponse>
 {
   private readonly IProductRepository _productRepository = productRepository;
 
-  public async Task<ProductResponse?> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
+  public async Task<ProductResponse> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
   {
     var product = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
 
-    return product?.ToResponse();
+    if (product is null)
+      throw new NotFoundException("Produto não encontrado.", ErrorCodes.ProductNotFound);
+    
+    return product.ToResponse();
   }
 }

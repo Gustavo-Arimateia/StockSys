@@ -1,55 +1,57 @@
-﻿using FluentValidation;
+﻿using Application.Common.Errors;
+using Application.Common.Exceptions;
+using Domain.Models.Errors;
+using FluentValidation;
 
 namespace API.Middlewares;
 
-public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
+public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
-    private readonly RequestDelegate _next = next;
+  private readonly RequestDelegate _next = next;
+  private readonly ILogger<ExceptionHandlingMiddleware> _logger = logger;
 
-    public async Task InvokeAsync(HttpContext context)
+  public async Task InvokeAsync(HttpContext context)
+  {
+    try
     {
-        try
-        {
-            await _next(context);
-        }
-        catch (ValidationException ex)
-        {
-            await HandleValidationExceptionAsync(context, ex);
-        }
-        catch (Exception)
-        {
-            await HandleInternalExceptionAsync(context);
-        }
+      await _next(context);
     }
-
-    private static async Task HandleValidationExceptionAsync(HttpContext context, ValidationException exception)
+    catch (ValidationException exception)
     {
-        var errors = exception.Errors.Select(x => x.ErrorMessage).Distinct().ToList();
+      var errors = exception.Errors.Select(error => error.ErrorMessage).Distinct().ToArray();
 
-        string message = errors.Count == 1 ? errors[0] : "Existem campos inválidos na requisição.";
+      await WriteErrorAsync(context, StatusCodes.Status400BadRequest, "Existem campos inválidos na requisição.", ErrorCodes.ValidationError, errors);
+    }
+    catch (NotFoundException exception)
+    {
+      await WriteErrorAsync(context, StatusCodes.Status404NotFound, exception.Message, exception.Code);
+    }
+    catch (BusinessRuleException exception)
+    {
+      await WriteErrorAsync(context, StatusCodes.Status422UnprocessableEntity, exception.Message, exception.Code);
+    }
+    catch (ConflictException exception)
+    {
+      await WriteErrorAsync(context, StatusCodes.Status409Conflict, exception.Message, exception.Code);
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, "Erro não tratado durante o processamento da requisição.");
 
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        context.Response.ContentType = "application/json";
+      await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, "Ocorreu um erro interno no servidor.", ErrorCodes.InternalError);
+    }
+  }
 
-        await context.Response.WriteAsJsonAsync(new
+  private static async Task WriteErrorAsync(HttpContext context, int statusCode, string message, string code, IReadOnlyCollection<string>? errors = null)
+  {
+    context.Response.StatusCode = statusCode;
+
+    await context.Response.WriteAsJsonAsync(
+        new ApiErrorResponse
         {
-            success = false,
-            message,
-            data = (object?)null,
-            errors
+          Message = message,
+          Code = code,
+          Errors = errors
         });
-    }
-
-    private static async Task HandleInternalExceptionAsync(HttpContext context)
-    {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
-
-        await context.Response.WriteAsJsonAsync(new
-        {
-            success = false,
-            message = "Ocorreu um erro interno ao processar a solicitação.",
-            data = (object?)null
-        });
-    }
+  }
 }

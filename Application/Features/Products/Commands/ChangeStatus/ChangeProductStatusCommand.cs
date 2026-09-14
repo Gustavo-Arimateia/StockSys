@@ -5,4 +5,4 @@ namespace Application.Features.Products.Commands.ChangeStatus;
 
 public sealed record ChangeProductStatusCommand(
     int Id,
-    bool IsActive) : IRequest<ProductResponse?>;
+    bool IsActive) : IRequest<ProductResponse>;

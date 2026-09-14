@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Application.Features.Products.Commands.Update;
 
-public sealed record UpdateProductCommand : IRequest<ProductResponse?>
+public sealed record UpdateProductCommand : IRequest<ProductResponse>
 {
     [JsonIgnore]
     public int Id { get; init; }
