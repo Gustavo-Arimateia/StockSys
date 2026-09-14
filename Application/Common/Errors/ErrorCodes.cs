@@ -8,4 +8,6 @@ public static class ErrorCodes
   public const string ProductNotFound = "PRODUCT_NOT_FOUND";
   public const string ProductInactive = "PRODUCT_INACTIVE";
   public const string ProductOutOfStock = "PRODUCT_OUT_OF_STOCK";
+
+  public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
 }

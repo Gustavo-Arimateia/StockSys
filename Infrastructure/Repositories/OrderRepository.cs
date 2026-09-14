@@ -1,6 +1,9 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Errors;
+using Application.Common.Exceptions;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories;
 
@@ -19,6 +22,12 @@ public sealed class OrderRepository(StockSysDbContext dbContext) : IOrderReposit
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+
+            throw new ConflictException("O estoque de um ou mais produtos foi alterado por outra operação. Atualize os dados e tente novamente.", ErrorCodes.ConcurrencyConflict);
         }
         catch
         {
