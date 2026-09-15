@@ -26,8 +26,14 @@ public sealed class Order
       throw new ArgumentException("A chave de idempotência é obrigatória.", nameof(idempotencyKey));
 
     if (string.IsNullOrWhiteSpace(requestHash))
-      throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash)); 
+      throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash));
 
+    if (string.IsNullOrWhiteSpace(requestHash))
+      throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash));
+    
+    if (requestHash.Length != 64)
+      throw new ArgumentException("O hash da requisição deve possuir 64 caracteres.", nameof(requestHash));
+    
     _items.AddRange(orderItems);
 
     Status = OrderStatus.Pending;

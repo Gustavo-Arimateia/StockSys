@@ -167,6 +167,17 @@ public sealed class OrderTests
     Assert.Equal(OrderStatus.Cancelled, order.Status);
   }
 
+  [Theory]
+  [InlineData(63)]
+  [InlineData(65)]
+  public void Constructor_ShouldThrow_WhenRequestHashLengthIsInvalid(
+  int hashLength)
+  {
+    var requestHash = new string('A', hashLength);
+
+    Assert.Throws<ArgumentException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: requestHash));
+  }
+
   private static Order CreateOrder()
   {
     return new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash);
