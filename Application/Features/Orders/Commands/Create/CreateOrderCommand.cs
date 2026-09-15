@@ -4,8 +4,12 @@ using MediatR;
 
 namespace Application.Features.Orders.Commands.Create;
 
-public sealed record CreateOrderCommand(IReadOnlyCollection<CreateOrderItemCommand> Items, decimal DiscountPercentage) : IRequest<OrderResponse>
+public sealed record CreateOrderCommand : IRequest<OrderResponse>
 {
   [JsonIgnore]
   public Guid IdempotencyKey { get; init; }
+
+  public IReadOnlyCollection<CreateOrderItemCommand> Items { get; init; } = [];
+
+  public decimal DiscountPercentage { get; init; }
 }

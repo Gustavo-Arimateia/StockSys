@@ -16,6 +16,16 @@ public sealed class CreateOrderCommandHandler(IProductRepository productReposito
   {
     var requestHash = OrderRequestHasher.Compute(request);
 
+    var existingOrder =  await _orderRepository.GetByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken);
+
+    if (existingOrder is not null)
+    {
+      if (!string.Equals(existingOrder.RequestHash, requestHash, StringComparison.Ordinal))
+        throw new ConflictException("A chave de idempotência já foi utilizada em outra requisição.", ErrorCodes.IdempotencyKeyReused);
+      
+      return existingOrder.ToResponse();
+    }
+
     var productIds = request.Items.Select(item => item.ProductId).ToArray();
 
     var products = await _productRepository.GetByIdsForUpdateAsync(productIds, cancellationToken);
