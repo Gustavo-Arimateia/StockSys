@@ -112,4 +112,62 @@ public sealed class OrderRepositoryTests(SqlServerFixture fixture)
     Assert.Equal(0,  ordersCount);
     Assert.Equal(0, orderItemsCount);
   }
+
+  [Fact]
+  public async Task CreateAsync_ShouldPreventDuplicateOrder_WhenIdempotencyKeyIsRepeated()
+  {
+    await _fixture.ResetDatabaseAsync();
+
+    int productId;
+
+    await using (var seedContext = _fixture.CreateDbContext())
+    {
+      var product = new Product("Mouse", "Mouse Gamer", 100m, 1);
+
+      seedContext.Products.Add(product);
+
+      await seedContext.SaveChangesAsync();
+
+      productId = product.Id;
+    }
+
+    var idempotencyKey = Guid.NewGuid();
+    var requestHash = new string('A', 64);
+
+    await using var firstContext = _fixture.CreateDbContext();
+
+    await using var secondContext = _fixture.CreateDbContext();
+
+    var firstProduct = await firstContext.Products.SingleAsync(product => product.Id == productId);
+
+    var secondProduct = await secondContext.Products.SingleAsync(product => product.Id == productId);
+
+    Assert.True(firstProduct.TryDecreaseStock(1));
+
+    Assert.True(secondProduct.TryDecreaseStock(1));
+
+    var firstOrder = new Order([new OrderItem(firstProduct.Id, firstProduct.Name, 1, firstProduct.Price)], 0, idempotencyKey, requestHash);
+
+    var secondOrder = new Order([new OrderItem(secondProduct.Id, secondProduct.Name, 1, secondProduct.Price)], 0, idempotencyKey, requestHash);
+
+    var firstRepository = new OrderRepository(firstContext);
+
+    var secondRepository = new OrderRepository(secondContext);
+
+    await firstRepository.CreateAsync(firstOrder);
+
+    await Assert.ThrowsAsync<ConflictException>(() => secondRepository.CreateAsync(secondOrder));
+
+    await using var verificationContext = _fixture.CreateDbContext();
+
+    var ordersCount = await verificationContext.Orders.CountAsync();
+
+    var orderItemsCount = await verificationContext.OrderItems.CountAsync();
+
+    var productAfterRequests = await verificationContext.Products.AsNoTracking().SingleAsync(product => product.Id == productId);
+
+    Assert.Equal(1, ordersCount);
+    Assert.Equal(1, orderItemsCount);
+    Assert.Equal(0, productAfterRequests.StockQuantity);
+  }
 }
