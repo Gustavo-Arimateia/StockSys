@@ -9,6 +9,8 @@ public static class ErrorCodes
   public const string ProductInactive = "PRODUCT_INACTIVE";
   public const string ProductOutOfStock = "PRODUCT_OUT_OF_STOCK";
 
+  public const string OrderNotFound = "ORDER_NOT_FOUND";
+
   public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
   public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
 }

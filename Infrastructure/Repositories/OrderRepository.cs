@@ -44,6 +44,11 @@ public sealed class OrderRepository(StockSysDbContext dbContext) : IOrderReposit
     }
   }
 
+  public async Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+  {
+    return await _dbContext.Orders.AsNoTracking().Include(order => order.Items).FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
+  }
+
   public async Task<Order?> GetByIdempotencyKeyAsync(Guid idempotencyKey, CancellationToken cancellationToken = default)
   {
     return await _dbContext.Orders.AsNoTracking().Include(order => order.Items).FirstOrDefaultAsync(order => order.IdempotencyKey == idempotencyKey, cancellationToken);

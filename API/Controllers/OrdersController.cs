@@ -1,4 +1,5 @@
 ﻿using Application.Features.Orders.Commands.Create;
+using Application.Features.Orders.Queries.GetById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +21,14 @@ public sealed class OrdersController(IMediator mediator) : ControllerBase
 
     var order = await _mediator.Send(command, cancellationToken);
 
-    return StatusCode(StatusCodes.Status201Created, order);
+    return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+  }
+
+  [HttpGet("{id:int}")]
+  public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+  {
+    var order = await _mediator.Send(new GetOrderByIdQuery(id), cancellationToken);
+
+    return Ok(order);
   }
 }

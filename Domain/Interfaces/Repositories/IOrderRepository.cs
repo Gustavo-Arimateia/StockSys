@@ -7,4 +7,6 @@ public interface IOrderRepository
   Task CreateAsync(Order order, CancellationToken cancellationToken = default);
 
   Task<Order?> GetByIdempotencyKeyAsync(Guid idempotencyKey, CancellationToken cancellationToken = default);
+
+  Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 }
