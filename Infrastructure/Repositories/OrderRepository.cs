@@ -1,7 +1,7 @@
 ﻿using Application.Common.Errors;
 using Application.Common.Exceptions;
-using Application.Interfaces.Repositories;
 using Domain.Entities;
+using Domain.Interfaces.Repositories;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

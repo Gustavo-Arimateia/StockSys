@@ -5,6 +5,8 @@ namespace StockSys.Tests.Domain.Entities;
 
 public sealed class OrderTests
 {
+  private static readonly string RequestHash = new('A', 64);
+
   [Fact]
   public void Constructor_ShouldCreatePendingOrder()
   {
@@ -23,7 +25,7 @@ public sealed class OrderTests
       new OrderItem(2, "Teclado", 1, 50m)
     };
 
-    var order = new Order(items, discountPercentage: 0);
+    var order = new Order(items, discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash);
 
     Assert.Equal(250m, order.ProductsValue);
     Assert.Equal(0m, order.DiscountValue);
@@ -39,7 +41,7 @@ public sealed class OrderTests
       new OrderItem(2, "Teclado", 1, 50m)
     };
 
-    var order = new Order(items, discountPercentage: 10);
+    var order = new Order(items, discountPercentage: 10, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash);
 
     Assert.Equal(250m, order.ProductsValue);
     Assert.Equal(10m, order.DiscountPercentage);
@@ -50,24 +52,42 @@ public sealed class OrderTests
   [Fact]
   public void Constructor_ShouldThrow_WhenOrderHasNoItems()
   {
-    Assert.Throws<ArgumentException>(() => new Order([], discountPercentage: 0));
+    Assert.Throws<ArgumentException>(() => new Order([], discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash));
   }
 
   [Fact]
   public void Constructor_ShouldThrow_WhenDiscountIsNegative()
   {
-    Assert.Throws<ArgumentOutOfRangeException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], -1));
+    Assert.Throws<ArgumentOutOfRangeException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: -1, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash));
   }
 
   [Fact]
   public void Constructor_ShouldThrow_WhenDiscountIsGreaterThan20()
   {
-    Assert.Throws<ArgumentOutOfRangeException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], 21));
+    Assert.Throws<ArgumentOutOfRangeException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 21, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash));
   }
 
-  private static Order CreateOrder()
+  [Fact]
+  public void Constructor_ShouldSetIdempotencyData()
   {
-    return new Order([new OrderItem(1, "Mouse", 1, 100m)], 0);
+    var idempotencyKey = Guid.NewGuid();
+
+    var order = new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: idempotencyKey, requestHash: RequestHash);
+
+    Assert.Equal(idempotencyKey, order.IdempotencyKey);
+    Assert.Equal(RequestHash, order.RequestHash);
+  }
+
+  [Fact]
+  public void Constructor_ShouldThrow_WhenIdempotencyKeyIsEmpty()
+  {
+    Assert.Throws<ArgumentException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: Guid.Empty, requestHash: RequestHash));
+  }
+
+  [Fact]
+  public void Constructor_ShouldThrow_WhenRequestHashIsEmpty()
+  {
+    Assert.Throws<ArgumentException>(() => new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: string.Empty));
   }
 
   [Theory]
@@ -126,7 +146,6 @@ public sealed class OrderTests
     var order = CreateOrder();
 
     order.TransitionTo(OrderStatus.Processing);
-
     order.TransitionTo(OrderStatus.Completed);
 
     var result = order.TransitionTo(OrderStatus.Cancelled);
@@ -148,4 +167,8 @@ public sealed class OrderTests
     Assert.Equal(OrderStatus.Cancelled, order.Status);
   }
 
+  private static Order CreateOrder()
+  {
+    return new Order([new OrderItem(1, "Mouse", 1, 100m)], discountPercentage: 0, idempotencyKey: Guid.NewGuid(), requestHash: RequestHash);
+  }
 }

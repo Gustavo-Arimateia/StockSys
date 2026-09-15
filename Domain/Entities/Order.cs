@@ -8,9 +8,9 @@ public sealed class Order
 
   private readonly List<OrderItem> _items = [];
 
-  private Order() {}
+  private Order() { }
 
-  public Order(IEnumerable<OrderItem> items, decimal discountPercentage)
+  public Order(IEnumerable<OrderItem> items, decimal discountPercentage, Guid idempotencyKey, string requestHash)
   {
     ArgumentNullException.ThrowIfNull(items);
 
@@ -20,7 +20,13 @@ public sealed class Order
       throw new ArgumentException("O pedido deve possuir pelo menos um item.", nameof(items));
 
     if (discountPercentage < 0 || discountPercentage > MaximumDiscountPercentage)
-      throw new ArgumentOutOfRangeException(nameof(discountPercentage), $"O desconto deve estar entre 0 e {MaximumDiscountPercentage}%."); 
+      throw new ArgumentOutOfRangeException(nameof(discountPercentage), $"O desconto deve estar entre 0 e {MaximumDiscountPercentage}%.");
+
+    if (idempotencyKey == Guid.Empty)
+      throw new ArgumentException("A chave de idempotência é obrigatória.", nameof(idempotencyKey));
+
+    if (string.IsNullOrWhiteSpace(requestHash))
+      throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash)); 
 
     _items.AddRange(orderItems);
 
@@ -28,6 +34,9 @@ public sealed class Order
     CreatedAt = DateTime.UtcNow;
 
     DiscountPercentage = discountPercentage;
+
+    IdempotencyKey = idempotencyKey;
+    RequestHash = requestHash;
 
     CalculateValues();
   }
@@ -45,6 +54,10 @@ public sealed class Order
   public decimal DiscountValue { get; private set; }
 
   public decimal TotalValue { get; private set; }
+
+  public Guid IdempotencyKey { get; private set; }
+
+  public string RequestHash { get; private set; } = string.Empty;
 
   public IReadOnlyCollection<OrderItem> Items => _items;
 

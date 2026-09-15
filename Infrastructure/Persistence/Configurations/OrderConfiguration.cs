@@ -44,6 +44,14 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         .HasPrecision(18, 2)
         .IsRequired();
 
+    builder.Property(order => order.IdempotencyKey)
+        .IsRequired();
+
+    builder.Property(order => order.RequestHash)
+        .HasColumnType("char(64)")
+        .IsRequired();
+
+
     builder.HasMany(order => order.Items)
         .WithOne()
         .HasForeignKey(item => item.OrderId)
@@ -55,5 +63,8 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     builder.HasIndex(order => order.CreatedAt);
 
     builder.HasIndex(order => order.Status);
+
+    builder.HasIndex(order => order.IdempotencyKey)
+        .IsUnique();
   }
 }

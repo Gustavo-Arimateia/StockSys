@@ -32,9 +32,13 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
         .Must(HaveDistinctProducts)
         .When(command => command.Items is { Count: > 0 })
         .WithMessage("O pedido não pode possuir o mesmo produto mais de uma vez.");
+
+    RuleFor(command => command.IdempotencyKey)
+        .NotEmpty()
+        .WithMessage("A chave de idempotência é obrigatória.");
   }
 
-  private static bool HaveDistinctProducts( IReadOnlyCollection<CreateOrderItemCommand> items)
+  private static bool HaveDistinctProducts(IReadOnlyCollection<CreateOrderItemCommand> items)
   {
     return items.Select(item => item.ProductId).Distinct().Count() == items.Count;
   }

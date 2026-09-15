@@ -1,7 +1,6 @@
 ﻿using Application.Common.Errors;
 using Application.Common.Exceptions;
 using Application.Features.Orders.Common;
-using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Domain.Interfaces.Repositories;
 using MediatR;
@@ -10,51 +9,52 @@ namespace Application.Features.Orders.Commands.Create;
 
 public sealed class CreateOrderCommandHandler(IProductRepository productRepository, IOrderRepository orderRepository) : IRequestHandler<CreateOrderCommand, OrderResponse>
 {
-    private readonly IProductRepository _productRepository = productRepository;
-    private readonly IOrderRepository _orderRepository = orderRepository;
+  private readonly IProductRepository _productRepository = productRepository;
+  private readonly IOrderRepository _orderRepository = orderRepository;
 
-    public async Task<OrderResponse> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+  public async Task<OrderResponse> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+  {
+    var requestHash = OrderRequestHasher.Compute(request);
+
+    var productIds = request.Items.Select(item => item.ProductId).ToArray();
+
+    var products = await _productRepository.GetByIdsForUpdateAsync(productIds, cancellationToken);
+
+    ValidateProductsExist(productIds, products);
+
+    var productsById = products.ToDictionary(product => product.Id);
+
+    var orderItems = new List<OrderItem>();
+
+    foreach (var requestItem in request.Items)
     {
-        var productIds = request.Items.Select(item => item.ProductId).ToArray();
+      var product = productsById[requestItem.ProductId];
 
-        var products = await _productRepository.GetByIdsForUpdateAsync(productIds, cancellationToken);
+      if (!product.IsActive)
+        throw new BusinessRuleException($"O produto '{product.Name}' está inativo.", ErrorCodes.ProductInactive);
 
-        ValidateProductsExist(productIds, products);
+      if (!product.TryDecreaseStock(requestItem.Quantity))
+        throw new BusinessRuleException($"O produto '{product.Name}' não possui estoque suficiente.", ErrorCodes.ProductOutOfStock);  
 
-        var productsById = products.ToDictionary(product => product.Id);
-
-        var orderItems = new List<OrderItem>();
-
-        foreach (var requestItem in request.Items)
-        {
-            var product = productsById[requestItem.ProductId];
-
-            if (!product.IsActive)
-                throw new BusinessRuleException($"O produto '{product.Name}' está inativo.", ErrorCodes.ProductInactive);
-
-            if (!product.TryDecreaseStock(requestItem.Quantity))
-                throw new BusinessRuleException($"O produto '{product.Name}' não possui estoque suficiente.", ErrorCodes.ProductOutOfStock);
-            
-
-            orderItems.Add(new OrderItem(product.Id, product.Name, requestItem.Quantity, product.Price));
-        }
-
-        var order = new Order(orderItems, request.DiscountPercentage);
-
-        await _orderRepository.CreateAsync(order, cancellationToken);
-
-        return order.ToResponse();
+      orderItems.Add(new OrderItem(product.Id, product.Name, requestItem.Quantity, product.Price));
     }
 
-    private static void ValidateProductsExist(IReadOnlyCollection<int> productIds, IReadOnlyCollection<Product> products)
-    {
-        if (products.Count == productIds.Count)
-            return;
+    var order = new Order(orderItems, request.DiscountPercentage, request.IdempotencyKey, requestHash);
 
-        var existingIds = products.Select(product => product.Id).ToHashSet();
+    await _orderRepository.CreateAsync(order, cancellationToken);
 
-        var missingProductId = productIds.First(id => !existingIds.Contains(id));
+    return order.ToResponse();
+  }
 
-        throw new NotFoundException($"Produto {missingProductId} não encontrado.", ErrorCodes.ProductNotFound);
-    }
+  private static void ValidateProductsExist(IReadOnlyCollection<int> productIds, IReadOnlyCollection<Product> products)
+  {
+    if (products.Count == productIds.Count)
+      return;
+
+    var existingIds = products.Select(product => product.Id).ToHashSet();
+
+    var missingProductId = productIds.First(id => !existingIds.Contains(id));
+
+    throw new NotFoundException($"Produto {missingProductId} não encontrado.", ErrorCodes.ProductNotFound);
+  }
 }

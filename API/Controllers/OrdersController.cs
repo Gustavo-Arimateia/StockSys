@@ -8,13 +8,18 @@ namespace API.Controllers;
 [Route("api/orders")]
 public sealed class OrdersController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator = mediator;
+  private readonly IMediator _mediator = mediator;
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateOrderCommand command, CancellationToken cancellationToken)
+  [HttpPost]
+  public async Task<IActionResult> Create([FromHeader(Name = "Idempotency-Key")] string? idempotencyKey, [FromBody] CreateOrderCommand command, CancellationToken cancellationToken)
+  {
+    command = command with
     {
-        var order = await _mediator.Send(command, cancellationToken);
+      IdempotencyKey = Guid.TryParse(idempotencyKey, out var key) ? key : Guid.Empty
+    };
 
-        return StatusCode(StatusCodes.Status201Created, order);
-    }
+    var order = await _mediator.Send(command, cancellationToken);
+
+    return StatusCode(StatusCodes.Status201Created, order);
+  }
 }
