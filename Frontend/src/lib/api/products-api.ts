@@ -27,6 +27,7 @@ export const productsApi = {
 
   getAll(
     params: ProductListParams = {},
+    options?: RequestInit,
   ): Promise<PagedResult<Product>> {
     const query =
       buildQueryString({
@@ -41,7 +42,10 @@ export const productsApi = {
 
     return httpClient.get<
       PagedResult<Product>
-    >(`${BASE_PATH}${query}`);
+    >(
+      `${BASE_PATH}${query}`,
+      options,
+    );
   },
 
   create(
