@@ -13,4 +13,8 @@ public interface IOrderRepository
   Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
   Task<PagedResult<Order>> GetPagedAsync(int page, int pageSize, OrderStatus? status, DateTime? startDate, DateTime? endDate, string sortBy, string sortDirection, CancellationToken cancellationToken = default);
+
+  Task<Order?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
+
+  Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

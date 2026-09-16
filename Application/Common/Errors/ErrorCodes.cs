@@ -13,4 +13,5 @@ public static class ErrorCodes
 
   public const string ConcurrencyConflict = "CONCURRENCY_CONFLICT";
   public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
+  public const string InvalidOrderStatusTransition = "INVALID_ORDER_STATUS_TRANSITION";
 }

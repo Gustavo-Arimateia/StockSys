@@ -1,4 +1,5 @@
-﻿using Application.Features.Orders.Commands.Create;
+﻿using Application.Features.Orders.Commands.ChangeStatus;
+using Application.Features.Orders.Commands.Create;
 using Application.Features.Orders.Queries.GetAll;
 using Application.Features.Orders.Queries.GetById;
 using MediatR;
@@ -39,5 +40,18 @@ public sealed class OrdersController(IMediator mediator) : ControllerBase
     var result = await _mediator.Send(query, cancellationToken);
 
     return Ok(result);
+  }
+
+  [HttpPatch("{id:int}/status")]
+  public async Task<IActionResult> ChangeStatus(int id, [FromBody] ChangeOrderStatusCommand command, CancellationToken cancellationToken)
+  {
+    command = command with
+    {
+      Id = id
+    };
+
+    var order = await _mediator.Send(command, cancellationToken);
+
+    return Ok(order);
   }
 }
