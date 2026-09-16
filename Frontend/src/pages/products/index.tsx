@@ -146,7 +146,10 @@ export default function ProductsPage() {
         </div>
       ) : (
         <>
-          <ProductTable products={productsResult.items} />
+          <ProductTable
+            products={productsResult.items}
+            onEdit={id => void router.push(`/products/${id}/edit`)}
+          />
 
           <Pagination
             page={productsResult.page}
