@@ -4,6 +4,14 @@ const currencyFormatter =
     currency: "BRL",
   });
 
+const dateFormatter =
+  new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      dateStyle: "short",
+    },
+  );
+
 const dateTimeFormatter =
   new Intl.DateTimeFormat(
     "pt-BR",
@@ -16,8 +24,14 @@ const dateTimeFormatter =
 export function formatCurrency(
   value: number,
 ): string {
-  return currencyFormatter.format(
-    value,
+  return currencyFormatter.format(value);
+}
+
+export function formatDate(
+  value: string,
+): string {
+  return dateFormatter.format(
+    new Date(value),
   );
 }
 
