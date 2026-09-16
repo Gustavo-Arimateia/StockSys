@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { productsApi } from "@/lib/api/products-api";
 
 export default function ProductsPage() {
   return (
