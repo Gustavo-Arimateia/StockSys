@@ -1,8 +1,8 @@
 using API.Middlewares;
 using Application.DependencyInjection;
 using Infrastructure.DependencyInjection;
-using Microsoft.OpenApi;
 using Infrastructure.Persistence;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +22,16 @@ builder.Services.AddSwaggerGen(options =>
   });
 });
 
+var frontendOrigin = builder.Configuration["Cors:FrontendOrigin"] ?? "http://localhost:3000";
+
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("Frontend", policy =>
+  {
+    policy.WithOrigins(frontendOrigin).AllowAnyHeader().AllowAnyMethod();
+  });
+});
+
 var app = builder.Build();
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
@@ -35,6 +45,8 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseCors("Frontend");
 
 app.MapControllers();
 

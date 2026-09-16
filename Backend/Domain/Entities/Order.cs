@@ -27,9 +27,6 @@ public sealed class Order
 
     if (string.IsNullOrWhiteSpace(requestHash))
       throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash));
-
-    if (string.IsNullOrWhiteSpace(requestHash))
-      throw new ArgumentException("O hash da requisição é obrigatório.", nameof(requestHash));
     
     if (requestHash.Length != 64)
       throw new ArgumentException("O hash da requisição deve possuir 64 caracteres.", nameof(requestHash));

@@ -1,4 +1,4 @@
-﻿namespace Domain.Models.Errors;
+﻿namespace API.Models.Errors;
 
 public sealed class ApiErrorResponse
 {

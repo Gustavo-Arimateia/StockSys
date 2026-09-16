@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Domain.Enums;
+using FluentValidation;
 
 namespace Application.Features.Orders.Queries.GetAll;
 
@@ -35,5 +36,9 @@ public sealed class GetOrdersQueryValidator: AbstractValidator<GetOrdersQuery>
     RuleFor(query => query)
       .Must(query => !query.StartDate.HasValue || !query.EndDate.HasValue || query.StartDate.Value <= query.EndDate.Value)
       .WithMessage("A data inicial não pode ser maior que a data final.");
+
+    RuleFor(query => query.Status)
+      .Must(status => !status.HasValue || Enum.IsDefined(typeof(OrderStatus), status.Value))
+      .WithMessage("O status informado é inválido.");
   }
 }

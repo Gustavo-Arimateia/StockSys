@@ -1,6 +1,6 @@
-﻿using Application.Common.Errors;
+﻿using API.Models.Errors;
+using Application.Common.Errors;
 using Application.Common.Exceptions;
-using Domain.Models.Errors;
 using FluentValidation;
 
 namespace API.Middlewares;

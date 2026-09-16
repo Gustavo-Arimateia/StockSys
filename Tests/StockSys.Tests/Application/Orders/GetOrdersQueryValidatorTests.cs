@@ -1,4 +1,5 @@
 ﻿using Application.Features.Orders.Queries.GetAll;
+using Domain.Enums;
 
 namespace StockSys.Tests.Application.Orders;
 
@@ -54,5 +55,15 @@ public sealed class GetOrdersQueryValidatorTests
     var result = _validator.Validate(query);
 
     Assert.True(result.IsValid);
+  }
+
+  [Fact]
+  public void Validate_ShouldFail_WhenStatusIsInvalid()
+  {
+    var query = new GetOrdersQuery(Status: (OrderStatus)99);
+
+    var result = _validator.Validate(query);
+
+    Assert.False(result.IsValid);
   }
 }

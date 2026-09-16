@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.5.11709.299
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "API\API.csproj", "{FCE5D413-348F-4CF0-A351-2210DF84EB4D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "Backend\API\API.csproj", "{FCE5D413-348F-4CF0-A351-2210DF84EB4D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{72F8A99F-4E0E-4BB0-8867-8C9DB7EBF3A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Backend\Application\Application.csproj", "{72F8A99F-4E0E-4BB0-8867-8C9DB7EBF3A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{F6FA91B5-8731-4369-9047-05AAB29A3295}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Backend\Domain\Domain.csproj", "{F6FA91B5-8731-4369-9047-05AAB29A3295}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{CA7F0DCD-4851-4310-B7D9-3A825C4B9458}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Backend\Infrastructure\Infrastructure.csproj", "{CA7F0DCD-4851-4310-B7D9-3A825C4B9458}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6123136F-EA6B-4BE7-B021-ACE919BF7B5F}"
 EndProject
