@@ -2,62 +2,70 @@
 
 public sealed class Product
 {
-    private Product() { }
+  private Product() { }
 
-    public Product(string name, string description, decimal price, int stockQuantity)
-    {
-        Name = name.Trim();
-        Description = description.Trim();
-        Price = price;
-        StockQuantity = stockQuantity;
-        IsActive = true;
-        CreatedAt = DateTime.UtcNow;
-    }
+  public Product(string name, string description, decimal price, int stockQuantity)
+  {
+    Name = name.Trim();
+    Description = description.Trim();
+    Price = price;
+    StockQuantity = stockQuantity;
+    IsActive = true;
+    CreatedAt = DateTime.UtcNow;
+  }
 
-    public int Id { get; private set; }
+  public int Id { get; private set; }
 
-    public string Name { get; private set; } = string.Empty;
+  public string Name { get; private set; } = string.Empty;
 
-    public string Description { get; private set; } = string.Empty;
+  public string Description { get; private set; } = string.Empty;
 
-    public decimal Price { get; private set; }
+  public decimal Price { get; private set; }
 
-    public int StockQuantity { get; private set; }
+  public int StockQuantity { get; private set; }
 
-    public bool IsActive { get; private set; }
+  public bool IsActive { get; private set; }
 
-    public DateTime CreatedAt { get; private set; }
+  public DateTime CreatedAt { get; private set; }
 
-    public byte[] RowVersion { get; private set; } = [];
+  public byte[] RowVersion { get; private set; } = [];
 
-    public void Update(string name, string description, decimal price, int stockQuantity)
-    {
-        Name = name.Trim();
-        Description = description.Trim();
-        Price = price;
-        StockQuantity = stockQuantity;
-    }
+  public void Update(string name, string description, decimal price, int stockQuantity)
+  {
+    Name = name.Trim();
+    Description = description.Trim();
+    Price = price;
+    StockQuantity = stockQuantity;
+  }
 
-    public void Activate()
-    {
-        IsActive = true;
-    }
+  public void Activate()
+  {
+    IsActive = true;
+  }
 
-    public void Deactivate()
-    {
-        IsActive = false;
-    }
+  public void Deactivate()
+  {
+    IsActive = false;
+  }
 
-    public bool TryDecreaseStock(int quantity)
-    {
-        if (quantity <= 0)
-            throw new ArgumentOutOfRangeException(nameof(quantity));
+  public bool TryDecreaseStock(int quantity)
+  {
+    if (quantity <= 0)
+      throw new ArgumentOutOfRangeException(nameof(quantity));
 
-        if (StockQuantity < quantity)
-            return false;
+    if (StockQuantity < quantity)
+      return false;
 
-        StockQuantity -= quantity;
+    StockQuantity -= quantity;
 
-        return true;
-    }
+    return true;
+  }
+
+  public void IncreaseStock(int quantity)
+  {
+    if (quantity <= 0)
+      throw new ArgumentOutOfRangeException(nameof(quantity));
+
+    StockQuantity += quantity;
+  }
 }

@@ -65,25 +65,43 @@ public sealed class ProductTests
     Assert.True(product.IsActive);
   }
 
-    [Fact]
-    public void TryDecreaseStock_ShouldDecreaseStock_WhenQuantityIsAvailable()
-    {
-        var product = new Product("Mouse", "Mouse Gamer", 100m, 10);
+  [Fact]
+  public void TryDecreaseStock_ShouldDecreaseStock_WhenQuantityIsAvailable()
+  {
+    var product = new Product("Mouse", "Mouse Gamer", 100m, 10);
 
-        var result = product.TryDecreaseStock(3);
+    var result = product.TryDecreaseStock(3);
 
-        Assert.True(result);
-        Assert.Equal(7, product.StockQuantity);
-    }
+    Assert.True(result);
+    Assert.Equal(7, product.StockQuantity);
+  }
 
-    [Fact]
-    public void TryDecreaseStock_ShouldNotChangeStock_WhenQuantityIsUnavailable()
-    {
-        var product = new Product("Mouse", "Mouse Gamer", 100m, 2);
+  [Fact]
+  public void TryDecreaseStock_ShouldNotChangeStock_WhenQuantityIsUnavailable()
+  {
+    var product = new Product("Mouse", "Mouse Gamer", 100m, 2);
 
-        var result = product.TryDecreaseStock(3);
+    var result = product.TryDecreaseStock(3);
 
-        Assert.False(result);
-        Assert.Equal(2, product.StockQuantity);
-    }
+    Assert.False(result);
+    Assert.Equal(2, product.StockQuantity);
+  }
+
+  [Fact]
+  public void IncreaseStock_ShouldIncreaseStock()
+  {
+    var product = new Product("Mouse", "Mouse Gamer", 100m, 5);
+
+    product.IncreaseStock(2);
+
+    Assert.Equal(7, product.StockQuantity);
+  }
+
+  [Fact]
+  public void IncreaseStock_ShouldThrow_WhenQuantityIsZero()
+  {
+    var product = new Product("Mouse", "Mouse Gamer", 100m, 5);
+
+    Assert.Throws<ArgumentOutOfRangeException>(() => product.IncreaseStock(0));
+  }
 }

@@ -51,6 +51,8 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         .HasColumnType("char(64)")
         .IsRequired();
 
+    builder.Property(order => order.RowVersion)
+        .IsRowVersion();
 
     builder.HasMany(order => order.Items)
         .WithOne()

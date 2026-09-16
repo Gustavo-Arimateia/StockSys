@@ -83,12 +83,31 @@ public sealed class OrderRepository(StockSysDbContext dbContext) : IOrderReposit
 
   public async Task<Order?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default)
   {
-    return await _dbContext.Orders.FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
+    return await _dbContext.Orders.Include(order => order.Items).FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
   }
 
   public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
   {
-    await _dbContext.SaveChangesAsync(cancellationToken);
+    await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+    try
+    {
+      await _dbContext.SaveChangesAsync(cancellationToken);
+
+      await transaction.CommitAsync(cancellationToken);
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+      await transaction.RollbackAsync(cancellationToken);
+
+      throw new ConflictException("O pedido ou estoque foi alterado por outra operação. Atualize os dados e tente novamente.", ErrorCodes.ConcurrencyConflict);
+    }
+    catch
+    {
+      await transaction.RollbackAsync(cancellationToken);
+
+      throw;
+    }
   }
 
   public async Task<Order?> GetByIdempotencyKeyAsync(Guid idempotencyKey, CancellationToken cancellationToken = default)

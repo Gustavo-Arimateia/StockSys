@@ -65,6 +65,8 @@ public sealed class Order
 
   public string RequestHash { get; private set; } = string.Empty;
 
+  public byte[] RowVersion { get; private set; } = [];
+
   public IReadOnlyCollection<OrderItem> Items => _items;
 
   public bool CanTransitionTo(OrderStatus newStatus)
