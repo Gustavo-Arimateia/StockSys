@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Plus } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
 
 import ProductFilters, { type ProductSortOption, type ProductStatusFilter } from "@/components/products/ProductFilters";
 import ProductTable from "@/components/products/ProductTable";
 import Button from "@/components/ui/Button";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
@@ -27,6 +28,9 @@ export default function ProductsPage() {
   const [sort, setSort] = useState<ProductSortOption>("createdAt:desc");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [changingProductId, setChangingProductId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [productToDeactivate, setProductToDeactivate] = useState<Product | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -95,71 +99,144 @@ export default function ProductsPage() {
     });
   }
 
+  function handleToggleStatus(product: Product) {
+    if (product.isActive) {
+      setProductToDeactivate(product);
+      return;
+    }
+
+    void changeProductStatus(product);
+  }
+
+  async function handleConfirmDeactivate() {
+    if (!productToDeactivate)
+      return;
+
+    await changeProductStatus(productToDeactivate);
+  }
+
+  async function changeProductStatus(product: Product) {
+    try {
+      setChangingProductId(product.id);
+      setActionError(null);
+
+      if (product.isActive)
+        await productsApi.deactivate(product.id);
+      else
+        await productsApi.activate(product.id);
+
+      setProductToDeactivate(null);
+
+      const leavesCurrentFilter =
+        (status === "active" && product.isActive) ||
+        (status === "inactive" && !product.isActive);
+
+      if (leavesCurrentFilter && productsResult?.items.length === 1 && page > 1)
+        setPage(current => current - 1);
+      else
+        await loadProducts();
+    } catch (error) {
+      setProductToDeactivate(null);
+
+      if (error instanceof ApiError)
+        setActionError(error.message);
+      else
+        setActionError("Não foi possível alterar o status do produto.");
+    } finally {
+      setChangingProductId(null);
+    }
+  }
+
   const hasFilters = search.length > 0 || status !== "all";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-text">Produtos cadastrados</h2>
+    <>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Produtos cadastrados</h2>
 
-          <p className="mt-1 text-sm text-text-secondary">
-            {productsResult
-              ? `${productsResult.totalItems} ${productsResult.totalItems === 1 ? "produto encontrado" : "produtos encontrados"}.`
-              : "Consulte e gerencie os produtos do estoque."}
-          </p>
+            <p className="mt-1 text-sm text-text-secondary">
+              {productsResult
+                ? `${productsResult.totalItems} ${productsResult.totalItems === 1 ? "produto encontrado" : "produtos encontrados"}.`
+                : "Consulte e gerencie os produtos do estoque."}
+            </p>
+          </div>
+
+          <Button className="shrink-0" onClick={() => void router.push("/products/new")}>
+            <Plus size={18} />
+            Novo produto
+          </Button>
         </div>
 
-        <Button className="shrink-0" onClick={() => void router.push("/products/new")}>
-          <Plus size={18} />
-          Novo produto
-        </Button>
+        <ProductFilters
+          search={searchInput}
+          status={status}
+          sort={sort}
+          onSearchChange={setSearchInput}
+          onStatusChange={handleStatusChange}
+          onSortChange={handleSortChange}
+        />
+
+        {actionError && (
+          <div className="flex items-center gap-3 rounded-lg border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
+            <AlertCircle size={18} className="shrink-0" />
+            <span>{actionError}</span>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="rounded-xl border border-border bg-surface">
+            <LoadingState message="Carregando produtos..." />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-border bg-surface">
+            <ErrorState message={error} onRetry={() => void loadProducts()} />
+          </div>
+        ) : !productsResult || productsResult.items.length === 0 ? (
+          <div className="rounded-xl border border-border bg-surface">
+            <EmptyState
+              title={hasFilters ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
+              description={
+                hasFilters
+                  ? "Tente alterar os filtros ou buscar por outro nome."
+                  : "Quando você cadastrar o primeiro produto, ele aparecerá nesta lista."
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <ProductTable
+              products={productsResult.items}
+              changingProductId={changingProductId}
+              onEdit={id => void router.push(`/products/${id}/edit`)}
+              onToggleStatus={handleToggleStatus}
+            />
+
+            <Pagination
+              page={productsResult.page}
+              pageSize={productsResult.pageSize}
+              totalItems={productsResult.totalItems}
+              totalPages={productsResult.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
       </div>
 
-      <ProductFilters
-        search={searchInput}
-        status={status}
-        sort={sort}
-        onSearchChange={setSearchInput}
-        onStatusChange={handleStatusChange}
-        onSortChange={handleSortChange}
+      <ConfirmDialog
+        isOpen={productToDeactivate !== null}
+        title="Inativar produto"
+        description={
+          productToDeactivate
+            ? `Tem certeza que deseja inativar o produto "${productToDeactivate.name}"? Produtos inativos não poderão ser utilizados em novos pedidos.`
+            : ""
+        }
+        confirmLabel="Inativar produto"
+        isLoading={changingProductId === productToDeactivate?.id}
+        onConfirm={() => void handleConfirmDeactivate()}
+        onCancel={() => setProductToDeactivate(null)}
       />
-
-      {isLoading ? (
-        <div className="rounded-xl border border-border bg-surface">
-          <LoadingState message="Carregando produtos..." />
-        </div>
-      ) : error ? (
-        <div className="rounded-xl border border-border bg-surface">
-          <ErrorState message={error} onRetry={() => void loadProducts()} />
-        </div>
-      ) : !productsResult || productsResult.items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface">
-          <EmptyState
-            title={hasFilters ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
-            description={
-              hasFilters
-                ? "Tente alterar os filtros ou buscar por outro nome."
-                : "Quando você cadastrar o primeiro produto, ele aparecerá nesta lista."
-            }
-          />
-        </div>
-      ) : (
-        <>
-          <ProductTable
-            products={productsResult.items}
-            onEdit={id => void router.push(`/products/${id}/edit`)}
-          />
-
-          <Pagination
-            page={productsResult.page}
-            pageSize={productsResult.pageSize}
-            totalItems={productsResult.totalItems}
-            totalPages={productsResult.totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
-    </div>
+    </>
   );
 }
