@@ -5,14 +5,8 @@ export default function NewOrderPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <Badge variant="info">
-          Em desenvolvimento
-        </Badge>
-
-        <p className="mt-3 text-sm text-text-secondary">
-          O formulário de criação de pedidos
-          será implementado em uma etapa futura.
-        </p>
+        <Badge variant="info">Em desenvolvimento</Badge>
+        <p className="mt-3 text-sm text-text-secondary">O formulário de criação de pedidos será implementado na próxima etapa.</p>
       </Card>
     </div>
   );

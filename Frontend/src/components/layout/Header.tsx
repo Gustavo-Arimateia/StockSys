@@ -11,6 +11,13 @@ type PageInformation = {
 };
 
 function getPageInformation(pathname: string): PageInformation {
+  if (pathname === "/dashboard") {
+    return {
+      title: "Dashboard",
+      description: "Acompanhe uma visão geral do estoque e dos pedidos."
+    };
+  }
+  
   if (pathname === "/orders/new") {
     return {
       title: "Novo pedido",

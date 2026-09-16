@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AlertTriangle, LoaderCircle, X } from "lucide-react";
 
 import Button from "@/components/ui/Button";
@@ -23,8 +24,21 @@ export default function ConfirmDialog({
   isLoading = false,
   variant = "danger",
   onConfirm,
-  onCancel
+  onCancel,
 }: ConfirmDialogProps) {
+  useEffect(() => {
+    if (!isOpen)
+      return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isLoading)
+        onCancel();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isLoading, onCancel]);
+
   if (!isOpen)
     return null;
 
@@ -40,6 +54,7 @@ export default function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-description"
         className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
       >
         <div className="flex items-start gap-4 p-6">
@@ -48,13 +63,8 @@ export default function ConfirmDialog({
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2 id="confirm-dialog-title" className="text-lg font-semibold text-text">
-              {title}
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-text-secondary">
-              {description}
-            </p>
+            <h2 id="confirm-dialog-title" className="text-lg font-semibold text-text">{title}</h2>
+            <p id="confirm-dialog-description" className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
           </div>
 
           <button
@@ -69,21 +79,11 @@ export default function ConfirmDialog({
         </div>
 
         <div className="flex justify-end gap-3 border-t border-border bg-surface-secondary px-6 py-4">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isLoading}
-            onClick={onCancel}
-          >
+          <Button type="button" variant="secondary" disabled={isLoading} onClick={onCancel}>
             {cancelLabel}
           </Button>
 
-          <Button
-            type="button"
-            variant={variant}
-            disabled={isLoading}
-            onClick={onConfirm}
-          >
+          <Button type="button" variant={variant} disabled={isLoading} onClick={onConfirm}>
             {isLoading && <LoaderCircle size={17} className="animate-spin" />}
             {isLoading ? "Processando..." : confirmLabel}
           </Button>

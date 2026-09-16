@@ -20,7 +20,7 @@ export default function NewProductPage() {
         name: data.name,
         description: data.description,
         price: data.price,
-        stockQuantity: data.stockQuantity
+        stockQuantity: data.stockQuantity,
       });
 
       await router.push("/products");
@@ -36,10 +36,6 @@ export default function NewProductPage() {
     }
   }
 
-  function handleCancel() {
-    void router.push("/products");
-  }
-
   return (
     <div className="mx-auto max-w-4xl">
       <ProductForm
@@ -48,8 +44,8 @@ export default function NewProductPage() {
         isSubmitting={isSubmitting}
         serverError={serverError}
         onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        />
+        onCancel={() => void router.push("/products")}
+      />
     </div>
   );
 }

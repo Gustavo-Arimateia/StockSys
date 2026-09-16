@@ -9,55 +9,44 @@ import { ApiError } from "@/lib/api/http-client";
 import { productsApi } from "@/lib/api/products-api";
 import type { Product } from "@/types/product";
 
+type LoadError = {
+  productId: number;
+  message: string;
+};
+
 export default function EditProductPage() {
   const router = useRouter();
+  const productId = getProductId(router.query.id);
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const loadProduct = useCallback(async (signal?: AbortSignal) => {
-    if (!router.isReady)
-      return;
-
-    const rawId = router.query.id;
-    const productId = Number(Array.isArray(rawId) ? rawId[0] : rawId);
-
-    if (!Number.isInteger(productId) || productId <= 0) {
-      setLoadError("O identificador do produto é inválido.");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setLoadError(null);
-
-      const result = await productsApi.getById(productId, { signal });
-      setProduct(result);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError")
-        return;
-
-      if (error instanceof ApiError)
-        setLoadError(error.message);
-      else
-        setLoadError("Não foi possível se comunicar com a API.");
-    } finally {
-      if (!signal?.aborted)
-        setIsLoading(false);
-    }
-  }, [router.isReady, router.query.id]);
+  const getProductRequest = useCallback((id: number, signal?: AbortSignal) => {
+    return productsApi.getById(id, { signal });
+  }, []);
 
   useEffect(() => {
+    if (!router.isReady || productId === null)
+      return;
+
     const controller = new AbortController();
 
-    void loadProduct(controller.signal);
+    getProductRequest(productId, controller.signal)
+      .then(result => {
+        setProduct(result);
+        setLoadError(null);
+      })
+      .catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+
+        setLoadError({ productId, message: getApiErrorMessage(error) });
+      });
 
     return () => controller.abort();
-  }, [loadProduct]);
+  }, [getProductRequest, productId, router.isReady]);
 
   async function handleSubmit(data: ProductFormData) {
     if (!product)
@@ -71,7 +60,7 @@ export default function EditProductPage() {
         name: data.name,
         description: data.description,
         price: data.price,
-        stockQuantity: data.stockQuantity
+        stockQuantity: data.stockQuantity,
       });
 
       await router.push("/products");
@@ -87,40 +76,55 @@ export default function EditProductPage() {
     }
   }
 
-  if (isLoading) {
+  function handleRetry() {
+    if (productId === null)
+      return;
+
+    setProduct(null);
+    setLoadError(null);
+    void reloadProduct(productId);
+  }
+
+
+  async function reloadProduct(id: number) {
+    try {
+      const result = await getProductRequest(id);
+      setProduct(result);
+      setLoadError(null);
+    } catch (error) {
+      setLoadError({ productId: id, message: getApiErrorMessage(error) });
+    }
+  }
+
+  if (!router.isReady)
+    return <ProductLoading />;
+
+  if (productId === null) {
     return (
-      <div className="rounded-xl border border-border bg-surface">
-        <LoadingState message="Carregando produto..." />
-      </div>
+      <ProductLoadError
+        message="O identificador do produto é inválido."
+        onRetry={() => void router.push("/products")}
+        retryLabel="Voltar para produtos"
+      />
     );
   }
 
-  if (loadError || !product) {
-    return (
-      <div className="space-y-4">
-        <div className="rounded-xl border border-border bg-surface">
-          <ErrorState
-            title="Não foi possível carregar o produto"
-            message={loadError ?? "Produto não encontrado."}
-            onRetry={() => void loadProduct()}
-          />
-        </div>
+  const currentLoadError = loadError?.productId === productId ? loadError.message : null;
 
-        <Button variant="secondary" onClick={() => void router.push("/products")}>
-          Voltar para produtos
-        </Button>
-      </div>
-    );
-  }
+  if (currentLoadError)
+    return <ProductLoadError message={currentLoadError} onRetry={handleRetry} />;
+
+  if (!product || product.id !== productId)
+    return <ProductLoading />;
 
   return (
     <div className="mx-auto max-w-4xl">
       <ProductForm
         initialValues={{
-            name: product.name,
-            description: product.description ?? "",
-            price: String(product.price),
-            stockQuantity: String(product.stockQuantity)
+          name: product.name,
+          description: product.description ?? "",
+          price: String(product.price),
+          stockQuantity: String(product.stockQuantity),
         }}
         formDescription="Altere os dados necessários e salve as alterações."
         submitLabel="Salvar alterações"
@@ -128,7 +132,56 @@ export default function EditProductPage() {
         serverError={serverError}
         onSubmit={handleSubmit}
         onCancel={() => void router.push("/products")}
-        />
+      />
     </div>
   );
+}
+
+function ProductLoading() {
+  return (
+    <div className="rounded-xl border border-border bg-surface">
+      <LoadingState message="Carregando produto..." />
+    </div>
+  );
+}
+
+type ProductLoadErrorProps = {
+  message: string;
+  onRetry: () => void;
+  retryLabel?: string;
+};
+
+function ProductLoadError({ message, onRetry, retryLabel }: ProductLoadErrorProps) {
+  if (retryLabel) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-surface">
+          <ErrorState title="Não foi possível carregar o produto" message={message} onRetry={onRetry} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border bg-surface">
+        <ErrorState title="Não foi possível carregar o produto" message={message} onRetry={onRetry} />
+      </div>
+
+      <Button variant="secondary" onClick={() => window.history.back()}>
+        Voltar
+      </Button>
+    </div>
+  );
+}
+
+function getProductId(value: string | string[] | undefined): number | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const id = Number(rawValue);
+
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function getApiErrorMessage(error: unknown): string {
+  return error instanceof ApiError ? error.message : "Não foi possível se comunicar com a API.";
 }

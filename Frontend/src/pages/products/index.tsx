@@ -28,75 +28,91 @@ export default function ProductsPage() {
   const [sort, setSort] = useState<ProductSortOption>("createdAt:desc");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [changingProductId, setChangingProductId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [productToDeactivate, setProductToDeactivate] = useState<Product | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      const nextSearch = searchInput.trim();
+
+      if (nextSearch === search)
+        return;
+
       setPage(1);
-      setSearch(searchInput.trim());
+      setIsLoading(true);
+      setError(null);
+      setSearch(nextSearch);
     }, 350);
 
     return () => window.clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchInput, search]);
 
-  const loadProducts = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const getProductsRequest = useCallback((signal?: AbortSignal) => {
+    const [sortBy, sortDirection] = sort.split(":") as [string, "asc" | "desc"];
 
-      const [sortBy, sortDirection] = sort.split(":") as [string, "asc" | "desc"];
-
-      const result = await productsApi.getAll({
-        page,
-        pageSize: PAGE_SIZE,
-        name: search || undefined,
-        isActive: status === "all" ? undefined : status === "active",
-        sortBy,
-        sortDirection
-      }, { signal });
-
-      setProductsResult(result);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError")
-        return;
-
-      if (error instanceof ApiError)
-        setError(error.message);
-      else
-        setError("Não foi possível se comunicar com a API.");
-    } finally {
-      if (!signal?.aborted)
-        setIsLoading(false);
-    }
+    return productsApi.getAll({
+      page,
+      pageSize: PAGE_SIZE,
+      name: search || undefined,
+      isActive: status === "all" ? undefined : status === "active",
+      sortBy,
+      sortDirection
+    }, { signal });
   }, [page, search, status, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    void loadProducts(controller.signal);
+    getProductsRequest(controller.signal)
+      .then(result => {
+        setProductsResult(result);
+        setError(null);
+      })
+      .catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+
+        setError(getApiErrorMessage(error));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted)
+          setIsLoading(false);
+      });
 
     return () => controller.abort();
-  }, [loadProducts]);
+  }, [getProductsRequest, retryKey]);
 
   function handleStatusChange(value: ProductStatusFilter) {
     setPage(1);
     setStatus(value);
+    setIsLoading(true);
+    setError(null);
   }
 
   function handleSortChange(value: ProductSortOption) {
     setPage(1);
     setSort(value);
+    setIsLoading(true);
+    setError(null);
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage);
+    setIsLoading(true);
+    setError(null);
 
     window.scrollTo({
       top: 0,
       behavior: "smooth"
     });
+  }
+
+  function handleRetry() {
+    setIsLoading(true);
+    setError(null);
+    setRetryKey(current => current + 1);
   }
 
   function handleToggleStatus(product: Product) {
@@ -131,10 +147,12 @@ export default function ProductsPage() {
         (status === "active" && product.isActive) ||
         (status === "inactive" && !product.isActive);
 
-      if (leavesCurrentFilter && productsResult?.items.length === 1 && page > 1)
+      if (leavesCurrentFilter && productsResult?.items.length === 1 && page > 1) {
+        setIsLoading(true);
         setPage(current => current - 1);
-      else
-        await loadProducts();
+      } else {
+        await reloadProducts();
+      }
     } catch (error) {
       setProductToDeactivate(null);
 
@@ -144,6 +162,20 @@ export default function ProductsPage() {
         setActionError("Não foi possível alterar o status do produto.");
     } finally {
       setChangingProductId(null);
+    }
+  }
+
+  async function reloadProducts() {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const result = await getProductsRequest();
+      setProductsResult(result);
+    } catch (error) {
+      setError(getApiErrorMessage(error));
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -191,7 +223,7 @@ export default function ProductsPage() {
           </div>
         ) : error ? (
           <div className="rounded-xl border border-border bg-surface">
-            <ErrorState message={error} onRetry={() => void loadProducts()} />
+            <ErrorState message={error} onRetry={handleRetry} />
           </div>
         ) : !productsResult || productsResult.items.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface">
@@ -239,4 +271,10 @@ export default function ProductsPage() {
       />
     </>
   );
+}
+
+function getApiErrorMessage(error: unknown): string {
+  return error instanceof ApiError
+    ? error.message
+    : "Não foi possível se comunicar com a API.";
 }
