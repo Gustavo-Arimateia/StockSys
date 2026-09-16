@@ -29,6 +29,14 @@ function getPageInformation(
     };
   }
 
+  if (pathname === "/products/new") {
+    return {
+      title: "Novo produto",
+      description:
+        "Cadastre um novo produto no estoque.",
+    };
+  }
+
   if (pathname.startsWith("/products")) {
     return {
       title: "Produtos",
