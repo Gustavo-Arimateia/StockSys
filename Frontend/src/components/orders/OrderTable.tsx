@@ -1,4 +1,4 @@
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Eye } from "lucide-react";
 
 import OrderStatusBadge from "@/components/orders/OrderStatusBadge";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
@@ -6,13 +6,14 @@ import type { OrderSummary } from "@/types/order";
 
 type OrderTableProps = {
   orders: OrderSummary[];
+  onView: (id: number) => void;
 };
 
-export default function OrderTable({ orders }: OrderTableProps) {
+export default function OrderTable({ orders, onView }: OrderTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-collapse">
+        <table className="w-full min-w-[1080px] border-collapse">
           <thead>
             <tr className="border-b border-border bg-surface-secondary">
               <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -37,6 +38,10 @@ export default function OrderTable({ orders }: OrderTableProps) {
 
               <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">
                 Total
+              </th>
+
+              <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">
+                Ações
               </th>
             </tr>
           </thead>
@@ -67,10 +72,7 @@ export default function OrderTable({ orders }: OrderTableProps) {
                 </td>
 
                 <td className="whitespace-nowrap px-5 py-4 text-right">
-                  <span className="block text-sm text-text">
-                    {order.discountPercentage}%
-                  </span>
-
+                  <span className="block text-sm text-text">{order.discountPercentage}%</span>
                   <span className="block text-xs text-text-secondary">
                     - {formatCurrency(order.discountValue)}
                   </span>
@@ -78,6 +80,17 @@ export default function OrderTable({ orders }: OrderTableProps) {
 
                 <td className="whitespace-nowrap px-5 py-4 text-right font-semibold text-text">
                   {formatCurrency(order.totalValue)}
+                </td>
+
+                <td className="px-5 py-4 text-right">
+                  <button
+                    type="button"
+                    onClick={() => onView(order.id)}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-primary"
+                  >
+                    <Eye size={15} />
+                    Visualizar
+                  </button>
                 </td>
               </tr>
             ))}

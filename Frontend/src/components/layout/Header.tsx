@@ -17,11 +17,18 @@ function getPageInformation(pathname: string): PageInformation {
       description: "Acompanhe uma visão geral do estoque e dos pedidos."
     };
   }
-  
+
   if (pathname === "/orders/new") {
     return {
       title: "Novo pedido",
       description: "Selecione os produtos e quantidades do pedido."
+    };
+  }
+
+  if (pathname === "/orders/[id]") {
+    return {
+      title: "Detalhes do pedido",
+      description: "Consulte os itens, valores e acompanhe o status do pedido."
     };
   }
 

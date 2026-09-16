@@ -1,13 +1,19 @@
 import { buildQueryString, httpClient } from "./http-client";
 
 import type { PagedResult } from "@/types/api";
-import type {ChangeOrderStatusRequest, CreateOrderRequest, Order, OrderListParams, OrderSummary} from "@/types/order";
+import type {
+  ChangeOrderStatusRequest,
+  CreateOrderRequest,
+  Order,
+  OrderListParams,
+  OrderSummary
+} from "@/types/order";
 
 const BASE_PATH = "/api/orders";
 
 export const ordersApi = {
-  getById(id: number): Promise<Order> {
-    return httpClient.get<Order>(`${BASE_PATH}/${id}`);
+  getById(id: number, options?: RequestInit): Promise<Order> {
+    return httpClient.get<Order>(`${BASE_PATH}/${id}`, options);
   },
 
   getAll(params: OrderListParams = {}, options?: RequestInit): Promise<PagedResult<OrderSummary>> {

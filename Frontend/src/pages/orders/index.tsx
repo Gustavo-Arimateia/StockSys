@@ -172,7 +172,10 @@ export default function OrdersPage() {
         </div>
       ) : (
         <>
-          <OrderTable orders={ordersResult.items} />
+          <OrderTable
+            orders={ordersResult.items}
+            onView={id => void router.push(`/orders/${id}`)}
+          />
 
           <Pagination
             page={ordersResult.page}
