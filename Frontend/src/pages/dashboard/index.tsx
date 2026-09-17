@@ -14,7 +14,7 @@ import RecentOrders from "@/components/dashboard/RecentOrders";
 import Button from "@/components/ui/Button";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import { ApiError } from "@/lib/api/http-client";
+import { getApiErrorMessage, isAbortError } from "@/lib/api/api-errors";
 import { dashboardApi } from "@/lib/api/dashboard-api";
 import type { DashboardSummary } from "@/types/dashboard";
 
@@ -35,7 +35,7 @@ export default function DashboardPage() {
         setError(null);
       })
       .catch(error => {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (isAbortError(error))
           return;
 
         setError(getApiErrorMessage(error));
@@ -143,7 +143,7 @@ export default function DashboardPage() {
         />
 
         <DashboardStatCard
-          title="Pedidos"
+          title="Total de pedidos"
           value={summary.orders.total}
           description="Total de pedidos cadastrados"
           icon={ClipboardList}
@@ -180,10 +180,4 @@ export default function DashboardPage() {
       />
     </div>
   );
-}
-
-function getApiErrorMessage(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Não foi possível se comunicar com a API.";
 }

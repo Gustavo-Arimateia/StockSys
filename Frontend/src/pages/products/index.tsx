@@ -10,7 +10,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import Pagination from "@/components/ui/Pagination";
-import { ApiError } from "@/lib/api/http-client";
+import { useToast } from "@/components/ui/ToastProvider";
+import { getApiErrorMessage, isAbortError } from "@/lib/api/api-errors";
 import { productsApi } from "@/lib/api/products-api";
 import type { PagedResult } from "@/types/api";
 import type { Product } from "@/types/product";
@@ -19,6 +20,7 @@ const PAGE_SIZE = 10;
 
 export default function ProductsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [productsResult, setProductsResult] = useState<PagedResult<Product> | null>(null);
   const [page, setPage] = useState(1);
@@ -71,7 +73,7 @@ export default function ProductsPage() {
         setError(null);
       })
       .catch(error => {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (isAbortError(error))
           return;
 
         setError(getApiErrorMessage(error));
@@ -87,21 +89,18 @@ export default function ProductsPage() {
   function handleStatusChange(value: ProductStatusFilter) {
     setPage(1);
     setStatus(value);
-    setIsLoading(true);
-    setError(null);
+    prepareReload();
   }
 
   function handleSortChange(value: ProductSortOption) {
     setPage(1);
     setSort(value);
-    setIsLoading(true);
-    setError(null);
+    prepareReload();
   }
 
   function handlePageChange(newPage: number) {
     setPage(newPage);
-    setIsLoading(true);
-    setError(null);
+    prepareReload();
 
     window.scrollTo({
       top: 0,
@@ -110,8 +109,7 @@ export default function ProductsPage() {
   }
 
   function handleRetry() {
-    setIsLoading(true);
-    setError(null);
+    prepareReload();
     setRetryKey(current => current + 1);
   }
 
@@ -143,6 +141,11 @@ export default function ProductsPage() {
 
       setProductToDeactivate(null);
 
+      showToast({
+        title: product.isActive ? "Produto inativado com sucesso." : "Produto ativado com sucesso.",
+        variant: "success"
+      });
+
       const leavesCurrentFilter =
         (status === "active" && product.isActive) ||
         (status === "inactive" && !product.isActive);
@@ -155,11 +158,7 @@ export default function ProductsPage() {
       }
     } catch (error) {
       setProductToDeactivate(null);
-
-      if (error instanceof ApiError)
-        setActionError(error.message);
-      else
-        setActionError("Não foi possível alterar o status do produto.");
+      setActionError(getApiErrorMessage(error, "Não foi possível alterar o status do produto."));
     } finally {
       setChangingProductId(null);
     }
@@ -177,6 +176,12 @@ export default function ProductsPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function prepareReload() {
+    setIsLoading(true);
+    setError(null);
+    setActionError(null);
   }
 
   const hasFilters = search.length > 0 || status !== "all";
@@ -271,10 +276,4 @@ export default function ProductsPage() {
       />
     </>
   );
-}
-
-function getApiErrorMessage(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Não foi possível se comunicar com a API.";
 }

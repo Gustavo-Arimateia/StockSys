@@ -8,9 +8,11 @@ type OrderSummaryProps = {
   discountPercentage: string;
   discountValue: number;
   totalValue: number;
+  discountError?: string | null;
   isSubmitting: boolean;
   canSubmit: boolean;
   onDiscountChange: (value: string) => void;
+  onCancel: () => void;
 };
 
 export default function OrderSummary({
@@ -18,9 +20,11 @@ export default function OrderSummary({
   discountPercentage,
   discountValue,
   totalValue,
+  discountError,
   isSubmitting,
   canSubmit,
-  onDiscountChange
+  onDiscountChange,
+  onCancel
 }: OrderSummaryProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
@@ -47,7 +51,11 @@ export default function OrderSummary({
               value={discountPercentage}
               disabled={isSubmitting}
               onChange={event => onDiscountChange(event.target.value)}
-              className="h-10 w-full rounded-lg border border-border bg-surface px-3 pr-9 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className={`h-10 w-full rounded-lg border bg-surface px-3 pr-9 text-sm text-text outline-none focus:ring-2 ${
+                discountError
+                  ? "border-danger focus:ring-danger/10"
+                  : "border-border focus:border-primary focus:ring-primary/10"
+              }`}
             />
 
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-text-secondary">
@@ -55,7 +63,9 @@ export default function OrderSummary({
             </span>
           </div>
 
-          <p className="mt-1 text-xs text-text-muted">Permitido de 0% a 20%.</p>
+          <p className={`mt-1 text-xs ${discountError ? "text-danger" : "text-text-muted"}`}>
+            {discountError ?? "Permitido de 0% a 20%."}
+          </p>
         </div>
 
         <SummaryLine label="Valor do desconto" value={`- ${formatCurrency(discountValue)}`} />
@@ -68,7 +78,11 @@ export default function OrderSummary({
         </div>
       </div>
 
-      <div className="border-t border-border bg-surface-secondary p-5">
+      <div className="grid gap-2 border-t border-border bg-surface-secondary p-5 sm:grid-cols-2 lg:grid-cols-1">
+        <Button variant="secondary" disabled={isSubmitting} onClick={onCancel}>
+          Cancelar
+        </Button>
+
         <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
           {isSubmitting ? (
             <>

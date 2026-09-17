@@ -8,7 +8,8 @@ import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
-import { ApiError } from "@/lib/api/http-client";
+import { useToast } from "@/components/ui/ToastProvider";
+import { getApiErrorMessage, isAbortError } from "@/lib/api/api-errors";
 import { ordersApi } from "@/lib/api/orders-api";
 import { productsApi } from "@/lib/api/products-api";
 import { formatCurrency } from "@/lib/formatters";
@@ -18,6 +19,7 @@ const PRODUCTS_PAGE_SIZE = 100;
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const idempotencyKeyRef = useRef<string | null>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -33,19 +35,13 @@ export default function NewOrderPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    productsApi.getAll({
-      page: 1,
-      pageSize: PRODUCTS_PAGE_SIZE,
-      isActive: true,
-      sortBy: "name",
-      sortDirection: "asc"
-    }, { signal: controller.signal })
+    loadActiveProducts(controller.signal)
       .then(result => {
-        setProducts(result.items);
+        setProducts(result);
         setLoadError(null);
       })
       .catch(error => {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (isAbortError(error))
           return;
 
         setLoadError(getApiErrorMessage(error));
@@ -152,7 +148,7 @@ export default function NewOrderPage() {
       const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
       idempotencyKeyRef.current = idempotencyKey;
 
-      await ordersApi.create({
+      const order = await ordersApi.create({
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity
@@ -160,14 +156,17 @@ export default function NewOrderPage() {
         discountPercentage: discount
       }, idempotencyKey);
 
-      await router.push("/orders");
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setSubmitError(error.errors?.length ? error.errors.join(" ") : error.message);
-        return;
-      }
+      showToast({
+        title: `Pedido #${order.id} criado com sucesso.`,
+        variant: "success"
+      });
 
-      setSubmitError("Não foi possível criar o pedido. Verifique sua conexão e tente novamente.");
+      await router.push(`/orders/${order.id}`);
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(
+        error,
+        "Não foi possível criar o pedido. Verifique sua conexão e tente novamente."
+      ));
     } finally {
       setIsSubmitting(false);
     }
@@ -177,7 +176,10 @@ export default function NewOrderPage() {
     idempotencyKeyRef.current = null;
   }
 
-  const discount = getValidNumber(discountPercentage);
+  const parsedDiscount = Number(discountPercentage);
+  const isDiscountValid = Number.isFinite(parsedDiscount) && parsedDiscount >= 0 && parsedDiscount <= 20;
+  const discount = isDiscountValid ? parsedDiscount : 0;
+  const discountError = isDiscountValid ? null : "O desconto deve estar entre 0% e 20%.";
   const productsValue = roundCurrency(items.reduce((total, item) => total + item.unitPrice * item.quantity, 0));
   const discountValue = roundCurrency(productsValue * discount / 100);
   const totalValue = roundCurrency(productsValue - discountValue);
@@ -197,9 +199,11 @@ export default function NewOrderPage() {
             {isLoadingProducts ? (
               <LoadingState message="Carregando produtos..." />
             ) : loadError ? (
-              <ErrorState
-                message={loadError}
-                onRetry={handleRetryProducts}
+              <ErrorState message={loadError} onRetry={handleRetryProducts} />
+            ) : products.length === 0 ? (
+              <EmptyState
+                title="Nenhum produto disponível"
+                description="Cadastre ou ative um produto com estoque para criar um pedido."
               />
             ) : (
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -224,7 +228,6 @@ export default function NewOrderPage() {
                 </select>
 
                 <Button
-                  type="button"
                   variant="secondary"
                   disabled={!selectedProductId || isSubmitting}
                   onClick={handleAddProduct}
@@ -268,27 +271,39 @@ export default function NewOrderPage() {
           discountPercentage={discountPercentage}
           discountValue={discountValue}
           totalValue={totalValue}
+          discountError={discountError}
           isSubmitting={isSubmitting}
-          canSubmit={items.length > 0}
+          canSubmit={items.length > 0 && isDiscountValid}
           onDiscountChange={handleDiscountChange}
+          onCancel={() => void router.push("/orders")}
         />
       </div>
     </form>
   );
 }
 
-function getValidNumber(value: string): number {
-  const number = Number(value);
+async function loadActiveProducts(signal: AbortSignal): Promise<Product[]> {
+  const products: Product[] = [];
+  let page = 1;
+  let totalPages = 1;
 
-  return Number.isFinite(number) ? number : 0;
+  do {
+    const result = await productsApi.getAll({
+      page,
+      pageSize: PRODUCTS_PAGE_SIZE,
+      isActive: true,
+      sortBy: "name",
+      sortDirection: "asc"
+    }, { signal });
+
+    products.push(...result.items);
+    totalPages = result.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+
+  return products;
 }
 
 function roundCurrency(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function getApiErrorMessage(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Não foi possível se comunicar com a API.";
 }

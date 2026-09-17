@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { AlertCircle, ArrowLeft, CalendarDays, Hash } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarDays } from "lucide-react";
 
 import OrderDetailsItems from "@/components/orders/OrderDetailsItems";
 import OrderFinancialSummary from "@/components/orders/OrderFinancialSummary";
@@ -10,64 +10,54 @@ import Button from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
+import { useToast } from "@/components/ui/ToastProvider";
+import { getApiErrorMessage, isAbortError } from "@/lib/api/api-errors";
 import { ApiError } from "@/lib/api/http-client";
 import { ordersApi } from "@/lib/api/orders-api";
 import { formatDateTime } from "@/lib/formatters";
 import { OrderStatus, type Order } from "@/types/order";
 
+type LoadError = {
+  orderId: number;
+  message: string;
+};
+
 export default function OrderDetailsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const orderId = getOrderId(router.query.id);
 
   const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
-  const getOrderId = useCallback(() => {
-    if (!router.isReady)
-      return null;
-
-    const rawId = Array.isArray(router.query.id) ? router.query.id[0] : router.query.id;
-    const id = Number(rawId);
-
-    return Number.isInteger(id) && id > 0 ? id : null;
-  }, [router.isReady, router.query.id]);
+  const getOrderRequest = useCallback((id: number, signal?: AbortSignal) => {
+    return ordersApi.getById(id, { signal });
+  }, []);
 
   useEffect(() => {
-    if (!router.isReady)
+    if (!router.isReady || orderId === null)
       return;
-
-    const orderId = getOrderId();
-
-    if (!orderId) {
-      setLoadError("O identificador do pedido é inválido.");
-      setIsLoading(false);
-      return;
-    }
 
     const controller = new AbortController();
 
-    ordersApi.getById(orderId, { signal: controller.signal })
+    getOrderRequest(orderId, controller.signal)
       .then(result => {
         setOrder(result);
         setLoadError(null);
       })
       .catch(error => {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (isAbortError(error))
           return;
 
-        setLoadError(getApiErrorMessage(error));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted)
-          setIsLoading(false);
+        setLoadError({ orderId, message: getApiErrorMessage(error) });
       });
 
     return () => controller.abort();
-  }, [router.isReady, getOrderId, retryKey]);
+  }, [getOrderRequest, orderId, retryKey, router.isReady]);
 
   async function changeStatus(status: OrderStatus) {
     if (!order)
@@ -78,41 +68,73 @@ export default function OrderDetailsPage() {
       setActionError(null);
 
       const updatedOrder = await ordersApi.changeStatus(order.id, { status });
-
       setOrder(updatedOrder);
       setShowCancelDialog(false);
-    } catch (error) {
-      if (error instanceof ApiError)
-        setActionError(error.message);
-      else
-        setActionError("Não foi possível alterar o status do pedido.");
 
+      showToast({
+        title: getStatusSuccessMessage(status),
+        variant: "success"
+      });
+    } catch (error) {
       setShowCancelDialog(false);
+
+      if (error instanceof ApiError && error.status === 409) {
+        setActionError("O pedido foi alterado por outra operação. Os dados foram atualizados.");
+        await reloadOrder(order.id);
+        return;
+      }
+
+      setActionError(getApiErrorMessage(error, "Não foi possível alterar o status do pedido."));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   function handleRetry() {
-    setIsLoading(true);
+    if (orderId === null)
+      return;
+
+    setOrder(null);
     setLoadError(null);
     setRetryKey(current => current + 1);
   }
 
-  if (isLoading) {
+  async function reloadOrder(id: number) {
+    try {
+      const result = await getOrderRequest(id);
+      setOrder(result);
+      setLoadError(null);
+    } catch (error) {
+      setLoadError({ orderId: id, message: getApiErrorMessage(error) });
+    }
+  }
+
+  if (!router.isReady)
+    return <OrderLoading />;
+
+  if (orderId === null) {
     return (
       <div className="rounded-xl border border-border bg-surface">
-        <LoadingState message="Carregando pedido..." />
+        <ErrorState
+          title="Não foi possível carregar o pedido"
+          message="O identificador do pedido é inválido."
+          actionLabel="Voltar para pedidos"
+          actionIcon={<ArrowLeft size={17} />}
+          onRetry={() => void router.push("/orders")}
+        />
       </div>
     );
   }
 
-  if (loadError || !order) {
+  const currentLoadError = loadError?.orderId === orderId ? loadError.message : null;
+
+  if (currentLoadError) {
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-surface">
           <ErrorState
-            message={loadError ?? "Pedido não encontrado."}
+            title="Não foi possível carregar o pedido"
+            message={currentLoadError}
             onRetry={handleRetry}
           />
         </div>
@@ -124,6 +146,9 @@ export default function OrderDetailsPage() {
       </div>
     );
   }
+
+  if (!order || order.id !== orderId)
+    return <OrderLoading />;
 
   return (
     <>
@@ -141,11 +166,6 @@ export default function OrderDetailsPage() {
             </div>
 
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary">
-              <span className="flex items-center gap-1.5">
-                <Hash size={15} />
-                Pedido #{order.id}
-              </span>
-
               <span className="flex items-center gap-1.5">
                 <CalendarDays size={15} />
                 {formatDateTime(order.createdAt)}
@@ -191,8 +211,30 @@ export default function OrderDetailsPage() {
   );
 }
 
-function getApiErrorMessage(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Não foi possível se comunicar com a API.";
+function OrderLoading() {
+  return (
+    <div className="rounded-xl border border-border bg-surface">
+      <LoadingState message="Carregando pedido..." />
+    </div>
+  );
+}
+
+function getOrderId(value: string | string[] | undefined): number | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const id = Number(rawValue);
+
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function getStatusSuccessMessage(status: OrderStatus): string {
+  switch (status) {
+    case OrderStatus.Processing:
+      return "Pedido enviado para processamento.";
+    case OrderStatus.Completed:
+      return "Pedido concluído com sucesso.";
+    case OrderStatus.Cancelled:
+      return "Pedido cancelado e estoque restaurado.";
+    default:
+      return "Status do pedido atualizado com sucesso.";
+  }
 }

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { AlertTriangle, LoaderCircle, X } from "lucide-react";
+import { AlertTriangle, CircleHelp, LoaderCircle, X } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 
@@ -24,7 +24,7 @@ export default function ConfirmDialog({
   isLoading = false,
   variant = "danger",
   onConfirm,
-  onCancel,
+  onCancel
 }: ConfirmDialogProps) {
   useEffect(() => {
     if (!isOpen)
@@ -42,6 +42,10 @@ export default function ConfirmDialog({
   if (!isOpen)
     return null;
 
+  const iconClasses = variant === "danger"
+    ? "bg-danger-soft text-danger"
+    : "bg-primary-soft text-primary";
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
@@ -58,8 +62,8 @@ export default function ConfirmDialog({
         className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
       >
         <div className="flex items-start gap-4 p-6">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
-            <AlertTriangle size={22} />
+          <div className={`flex size-11 shrink-0 items-center justify-center rounded-full ${iconClasses}`}>
+            {variant === "danger" ? <AlertTriangle size={22} /> : <CircleHelp size={22} />}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -79,7 +83,7 @@ export default function ConfirmDialog({
         </div>
 
         <div className="flex justify-end gap-3 border-t border-border bg-surface-secondary px-6 py-4">
-          <Button type="button" variant="secondary" disabled={isLoading} onClick={onCancel}>
+          <Button type="button" variant="secondary" disabled={isLoading} onClick={onCancel} autoFocus>
             {cancelLabel}
           </Button>
 

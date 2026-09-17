@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
 import Button from "./Button";
@@ -5,12 +6,16 @@ import Button from "./Button";
 type ErrorStateProps = {
   title?: string;
   message: string;
+  actionLabel?: string;
+  actionIcon?: ReactNode;
   onRetry: () => void;
 };
 
 export default function ErrorState({
   title = "Não foi possível carregar os dados",
   message,
+  actionLabel = "Tentar novamente",
+  actionIcon,
   onRetry
 }: ErrorStateProps) {
   return (
@@ -23,8 +28,8 @@ export default function ErrorState({
       <p className="mt-1 max-w-md text-sm leading-6 text-text-secondary">{message}</p>
 
       <Button variant="secondary" className="mt-5" onClick={onRetry}>
-        <RefreshCw size={17} />
-        Tentar novamente
+        {actionIcon ?? <RefreshCw size={17} />}
+        {actionLabel}
       </Button>
     </div>
   );

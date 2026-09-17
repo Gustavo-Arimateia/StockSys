@@ -25,6 +25,7 @@ function NavigationItem({ href, label, active, icon, onClick }: NavigationItemPr
     <Link
       href={href}
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${className}`}
     >
       {icon}

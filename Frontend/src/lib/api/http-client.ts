@@ -1,9 +1,6 @@
 import type { ApiErrorResponse } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_URL)
-  throw new Error("NEXT_PUBLIC_API_URL não está configurada.");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -25,35 +22,44 @@ type HttpOptions = Omit<RequestInit, "body"> & {
 };
 
 async function http<T>(path: string, options: HttpOptions = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+
+  if (!headers.has("Accept"))
+    headers.set("Accept", "application/json");
+
+  if (options.body !== undefined && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
+
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: {
-      Accept: "application/json",
-      ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined
   });
 
-  if (!response.ok) {
-    let errorResponse: ApiErrorResponse;
+  if (!response.ok)
+    throw await createApiError(response);
 
-    try {
-      errorResponse = await response.json();
-    } catch {
-      errorResponse = {
-        message: "Ocorreu um erro ao processar a requisição.",
-        code: "UNEXPECTED_ERROR",
-      };
-    }
-
-    throw new ApiError(response.status, errorResponse);
-  }
-
-  if (response.status === 204 || response.headers.get("content-length") === "0")
+  if (response.status === 204)
     return undefined as T;
 
-  return response.json() as Promise<T>;
+  const text = await response.text();
+
+  if (!text)
+    return undefined as T;
+
+  return JSON.parse(text) as T;
+}
+
+async function createApiError(response: Response): Promise<ApiError> {
+  try {
+    const errorResponse = await response.json() as ApiErrorResponse;
+    return new ApiError(response.status, errorResponse);
+  } catch {
+    return new ApiError(response.status, {
+      message: "Ocorreu um erro ao processar a requisição.",
+      code: "UNEXPECTED_ERROR"
+    });
+  }
 }
 
 export const httpClient = {
@@ -71,7 +77,7 @@ export const httpClient = {
 
   patch<T>(path: string, body?: unknown, options?: RequestInit) {
     return http<T>(path, { ...options, method: "PATCH", body });
-  },
+  }
 };
 
 export function buildQueryString(params: Record<string, string | number | boolean | undefined>): string {

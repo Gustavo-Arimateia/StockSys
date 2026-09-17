@@ -48,6 +48,11 @@ export default function DashboardBarChart({
 
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-secondary">
                 <div
+                  role="progressbar"
+                  aria-label={item.label}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(percentage)}
                   className={`h-full rounded-full transition-all duration-500 ${barClasses[item.variant]}`}
                   style={{ width: `${percentage}%` }}
                 />

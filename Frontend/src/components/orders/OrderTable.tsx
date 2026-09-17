@@ -29,7 +29,7 @@ export default function OrderTable({ orders, onView }: OrderTableProps) {
               </th>
 
               <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">
-                Produtos
+                Subtotal
               </th>
 
               <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">

@@ -9,7 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import Pagination from "@/components/ui/Pagination";
-import { ApiError } from "@/lib/api/http-client";
+import { getApiErrorMessage, isAbortError } from "@/lib/api/api-errors";
 import { ordersApi } from "@/lib/api/orders-api";
 import type { PagedResult } from "@/types/api";
 import type { OrderSummary } from "@/types/order";
@@ -52,7 +52,7 @@ export default function OrdersPage() {
         setError(null);
       })
       .catch(error => {
-        if (error instanceof DOMException && error.name === "AbortError")
+        if (isAbortError(error))
           return;
 
         setError(getApiErrorMessage(error));
@@ -188,10 +188,4 @@ export default function OrdersPage() {
       )}
     </div>
   );
-}
-
-function getApiErrorMessage(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : "Não foi possível se comunicar com a API.";
 }

@@ -13,7 +13,7 @@ export default function OrderFinancialSummary({ order }: OrderFinancialSummaryPr
       </div>
 
       <div className="space-y-4 p-5">
-        <SummaryLine label="Produtos" value={formatCurrency(order.productsValue)} />
+        <SummaryLine label="Subtotal" value={formatCurrency(order.productsValue)} />
 
         <SummaryLine
           label={`Desconto (${order.discountPercentage}%)`}

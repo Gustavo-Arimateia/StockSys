@@ -1,5 +1,6 @@
-import { Menu } from "lucide-react";
+import Head from "next/head";
 import { useRouter } from "next/router";
+import { Menu } from "lucide-react";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -71,22 +72,29 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const page = getPageInformation(pathname);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-[76px] w-full max-w-[1600px] items-center px-4 sm:px-6 lg:px-8">
-        <button
-          type="button"
-          className="mr-3 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:bg-surface-secondary lg:hidden"
-          onClick={onMenuClick}
-          aria-label="Abrir menu"
-        >
-          <Menu size={22} />
-        </button>
+    <>
+      <Head>
+        <title>{page.title} | StockSys</title>
+        <meta name="description" content={page.description} />
+      </Head>
 
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold text-text">{page.title}</h1>
-          <p className="mt-0.5 truncate text-sm text-text-secondary">{page.description}</p>
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-[76px] w-full max-w-[1600px] items-center px-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            className="mr-3 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:bg-surface-secondary lg:hidden"
+            onClick={onMenuClick}
+            aria-label="Abrir menu"
+          >
+            <Menu size={22} />
+          </button>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold text-text">{page.title}</h1>
+            <p className="mt-0.5 truncate text-sm text-text-secondary">{page.description}</p>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

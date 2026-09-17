@@ -6,7 +6,7 @@ type LoadingStateProps = {
 
 export default function LoadingState({ message = "Carregando..." }: LoadingStateProps) {
   return (
-    <div className="flex min-h-52 flex-col items-center justify-center gap-3">
+    <div className="flex min-h-52 flex-col items-center justify-center gap-3" role="status" aria-live="polite">
       <LoaderCircle size={28} className="animate-spin text-primary" />
       <span className="text-sm text-text-secondary">{message}</span>
     </div>

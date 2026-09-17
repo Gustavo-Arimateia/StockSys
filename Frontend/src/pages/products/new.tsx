@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 
 import ProductForm, { type ProductFormData } from "@/components/products/ProductForm";
-import { ApiError } from "@/lib/api/http-client";
+import { useToast } from "@/components/ui/ToastProvider";
+import { getApiErrorMessage } from "@/lib/api/api-errors";
 import { productsApi } from "@/lib/api/products-api";
 
 export default function NewProductPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -20,17 +22,20 @@ export default function NewProductPage() {
         name: data.name,
         description: data.description,
         price: data.price,
-        stockQuantity: data.stockQuantity,
+        stockQuantity: data.stockQuantity
+      });
+
+      showToast({
+        title: "Produto cadastrado com sucesso.",
+        variant: "success"
       });
 
       await router.push("/products");
     } catch (error) {
-      if (error instanceof ApiError) {
-        setServerError(error.errors?.length ? error.errors.join(" ") : error.message);
-        return;
-      }
-
-      setServerError("Não foi possível cadastrar o produto. Verifique sua conexão e tente novamente.");
+      setServerError(getApiErrorMessage(
+        error,
+        "Não foi possível cadastrar o produto. Verifique sua conexão e tente novamente."
+      ));
     } finally {
       setIsSubmitting(false);
     }
