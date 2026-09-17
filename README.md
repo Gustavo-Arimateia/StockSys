@@ -100,7 +100,7 @@ StockSys/
 
 ### Responsabilidades
 
-- **API**: controllers, configuração HTTP, CORS, Swagger e middleware de erros.
+- **API**: controllers, configuração HTTP, CORS, Swagger e tratamento global de exceções com `IExceptionHandler`.
 - **Application**: commands, queries, handlers, validators e DTOs de resposta.
 - **Domain**: entidades, enum de status e regras de domínio.
 - **Infrastructure**: EF Core, SQL Server, migrations e repositórios.
@@ -497,6 +497,8 @@ As respostas de erro seguem um contrato consistente:
 }
 ```
 
+O tratamento global utiliza `IExceptionHandler`, registrado com `AddExceptionHandler<GlobalExceptionHandler>()` e executado pelo `UseExceptionHandler()`. O `AddProblemDetails()` fornece o fallback exigido pelo middleware quando nenhum handler tratar uma exceção, enquanto o `GlobalExceptionHandler` preserva o contrato `ApiErrorResponse` para as exceções da aplicação e para erros inesperados.
+
 Principais status HTTP:
 
 - `400` — entrada inválida / FluentValidation;
@@ -519,7 +521,7 @@ Códigos relevantes incluem:
 
 # Testes
 
-A suíte contém testes de domínio, validators, middleware e integração.
+A suíte contém testes de domínio, validators, `GlobalExceptionHandler` e integração.
 
 Os testes de integração utilizam **Testcontainers + SQL Server real**, especialmente para os cenários em que EF Core InMemory não seria representativo:
 

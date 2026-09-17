@@ -1,4 +1,4 @@
-using API.Middlewares;
+using API.Handlers;
 using Application.DependencyInjection;
 using Infrastructure.DependencyInjection;
 using Infrastructure.Persistence;
@@ -12,6 +12,9 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -39,7 +42,7 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
   await DatabaseInitializer.MigrateAsync(app.Services);
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseExceptionHandler();
 
 app.UseSwagger();
 app.UseSwaggerUI();
