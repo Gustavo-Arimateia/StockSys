@@ -61,6 +61,24 @@ src/
 - `types`: contratos usados pelo frontend.
 - `styles`: tokens globais da identidade visual e configuração do Tailwind.
 
+## Execução via Docker Compose
+
+Na raiz do projeto, o frontend é executado junto com SQL Server e API:
+
+```bash
+docker compose up --build -d
+```
+
+A aplicação ficará disponível em:
+
+```text
+http://localhost:3001
+```
+
+Nesse modo, `NEXT_PUBLIC_API_URL` é definido durante o build da imagem pelo `docker-compose.yml`, portanto não é necessário criar `.env.local`.
+
+Para desenvolvimento fora do Docker, siga as instruções abaixo.
+
 ## Pré-requisitos
 
 - Node.js 20 ou superior.
@@ -86,7 +104,7 @@ Valor padrão:
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-O frontend utiliza a porta **3001** porque a porta 3000 está reservada no ambiente local do projeto.
+O frontend utiliza a porta **3001**, alinhada à configuração de CORS do backend.
 
 A API deve permitir CORS para:
 

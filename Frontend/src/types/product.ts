@@ -1,7 +1,7 @@
 export type Product = {
   id: number;
   name: string;
-  description: string | null;
+  description: string;
   price: number;
   stockQuantity: number;
   isActive: boolean;

@@ -22,7 +22,7 @@ builder.Services.AddSwaggerGen(options =>
   });
 });
 
-var frontendOrigin = builder.Configuration["Cors:FrontendOrigin"] ?? "http://localhost:3000";
+var frontendOrigin = builder.Configuration["Cors:FrontendOrigin"] ?? "http://localhost:3001";
 
 builder.Services.AddCors(options =>
 {

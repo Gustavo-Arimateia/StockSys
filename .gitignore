@@ -50,3 +50,5 @@ Generated/
 
 
 .env
+# Accidental npm files at repository root
+/package-lock.json

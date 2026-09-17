@@ -2,7 +2,15 @@
 **/obj/
 **/.vs/
 **/.vscode/
+**/node_modules/
+**/.next/
+**/TestResults/
+**/*.user
+**/*.tsbuildinfo
 .git/
 .gitignore
-README.md
 .env
+Frontend/.env.local
+Frontend/
+Tests/
+README.md

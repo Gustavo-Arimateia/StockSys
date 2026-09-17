@@ -1,4 +1,4 @@
-﻿using Application.Common.Errors;
+using Application.Common.Errors;
 using Application.Common.Exceptions;
 using Domain.Entities;
 using Infrastructure.Repositories;
@@ -111,6 +111,54 @@ public sealed class OrderRepositoryTests(SqlServerFixture fixture)
     Assert.Equal(5, productAfterFailure.StockQuantity);
     Assert.Equal(0,  ordersCount);
     Assert.Equal(0, orderItemsCount);
+  }
+
+
+  [Fact]
+  public async Task GetPagedAsync_ShouldIncludeOrdersFromEntireEndDate()
+  {
+    await _fixture.ResetDatabaseAsync();
+
+    int orderId;
+    DateTime endDate;
+
+    await using (var dbContext = _fixture.CreateDbContext())
+    {
+      var product = new Product("Teclado", "Teclado mecânico", 250m, 5);
+
+      dbContext.Products.Add(product);
+      await dbContext.SaveChangesAsync();
+
+      Assert.True(product.TryDecreaseStock(1));
+
+      var order = new Order(
+        [new OrderItem(product.Id, product.Name, 1, product.Price)],
+        discountPercentage: 0,
+        idempotencyKey: Guid.NewGuid(),
+        requestHash: new string('D', 64));
+
+      var repository = new OrderRepository(dbContext);
+
+      await repository.CreateAsync(order);
+
+      orderId = order.Id;
+      endDate = order.CreatedAt.Date;
+    }
+
+    await using var queryContext = _fixture.CreateDbContext();
+
+    var queryRepository = new OrderRepository(queryContext);
+
+    var result = await queryRepository.GetPagedAsync(
+      page: 1,
+      pageSize: 10,
+      status: null,
+      startDate: null,
+      endDate: endDate,
+      sortBy: "createdAt",
+      sortDirection: "desc");
+
+    Assert.Contains(result.Items, order => order.Id == orderId);
   }
 
   [Fact]

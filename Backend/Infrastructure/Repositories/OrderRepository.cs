@@ -1,4 +1,4 @@
-﻿using Application.Common.Errors;
+using Application.Common.Errors;
 using Application.Common.Exceptions;
 using Domain.Entities;
 using Domain.Enums;
@@ -59,10 +59,14 @@ public sealed class OrderRepository(StockSysDbContext dbContext) : IOrderReposit
       query = query.Where(order => order.Status == status.Value);
 
     if (startDate.HasValue)
-      query = query.Where(order => order.CreatedAt >= startDate.Value);
+      query = query.Where(order => order.CreatedAt >= startDate.Value.Date);
 
     if (endDate.HasValue)
-      query = query.Where(order => order.CreatedAt <= endDate.Value);
+    {
+      var exclusiveEndDate = endDate.Value.Date.AddDays(1);
+
+      query = query.Where(order => order.CreatedAt < exclusiveEndDate);
+    }
 
     var totalItems = await query.CountAsync(
       cancellationToken);

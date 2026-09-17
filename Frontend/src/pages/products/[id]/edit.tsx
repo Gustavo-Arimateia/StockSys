@@ -128,7 +128,7 @@ export default function EditProductPage() {
       <ProductForm
         initialValues={{
           name: product.name,
-          description: product.description ?? "",
+          description: product.description,
           price: String(product.price),
           stockQuantity: String(product.stockQuantity)
         }}

@@ -26,6 +26,26 @@ services:
     depends_on:
       - sqlserver
     restart: on-failure
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+
+    container_name: stocksys-frontend
+
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    ports:
+      - "3001:3001"
+
+    depends_on:
+      - api
+
+    restart: unless-stopped
 
 volumes:
   stocksys-sqlserver-data:

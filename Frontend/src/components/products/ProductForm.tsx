@@ -95,6 +95,7 @@ export default function ProductForm({
               id="name"
               type="text"
               value={values.name}
+              maxLength={150}
               disabled={isSubmitting}
               autoFocus
               onChange={event => updateField("name", event.target.value)}
@@ -106,12 +107,13 @@ export default function ProductForm({
           </div>
 
           <div className="md:col-span-2">
-            <FieldLabel htmlFor="description">Descrição</FieldLabel>
+            <FieldLabel htmlFor="description" required>Descrição</FieldLabel>
 
             <textarea
               id="description"
               rows={4}
               value={values.description}
+              maxLength={500}
               disabled={isSubmitting}
               onChange={event => updateField("description", event.target.value)}
               className={`${getInputClasses(Boolean(errors.description))} h-auto resize-none py-2.5`}
@@ -191,8 +193,18 @@ export default function ProductForm({
 function validateProduct(values: ProductFormInitialValues): FormErrors {
   const errors: FormErrors = {};
 
-  if (!values.name.trim())
+  const name = values.name.trim();
+  const description = values.description.trim();
+
+  if (!name)
     errors.name = "Informe o nome do produto.";
+  else if (name.length > 150)
+    errors.name = "O nome do produto deve ter no máximo 150 caracteres.";
+
+  if (!description)
+    errors.description = "Informe a descrição do produto.";
+  else if (description.length > 500)
+    errors.description = "A descrição do produto deve ter no máximo 500 caracteres.";
 
   if (!values.price.trim())
     errors.price = "Informe o preço do produto.";
